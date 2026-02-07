@@ -153,6 +153,15 @@ app.get('/api/bics', (req, res) => {
   res.json(bics);
 });
 
+app.get('/api/entornos', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'bic_inmuebles_entornos.geojson'), 'utf8');
+    res.json(JSON.parse(data));
+  } catch (e) {
+    res.json({ type: "FeatureCollection", features: [] });
+  }
+});
+
 app.get('/api/borders', (req, res) => {
   try {
     const data = fs.readFileSync(path.join(__dirname, 'municipios_borders.json'), 'utf8');

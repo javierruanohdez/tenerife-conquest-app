@@ -46,38 +46,18 @@ class _MapScreenState extends State<MapScreen> {
     _mapController.move(LatLng(lat, lng), 14.0);
   }
 
-  List<LatLng> _generateCirclePoints(LatLng center, double radiusInMeters) {
-    List<LatLng> points = [];
-    const int numPoints = 20;
-    for (int i = 0; i < numPoints; i++) {
-      double angle = (i * 2 * math.pi) / numPoints;
-      // Rough approximation for meters to lat/lng
-      double lat = center.latitude + (radiusInMeters / 111320.0) * math.cos(angle);
-      double lng = center.longitude + (radiusInMeters / (111320.0 * math.cos(center.latitude * math.pi / 180))) * math.sin(angle);
-      points.add(LatLng(lat, lng));
-    }
-    return points;
-  }
-
   @override
   Widget build(BuildContext context) {
     final poiProvider = Provider.of<POIProvider>(context);
     
-    // CAPA DE NIEBLA: Polígonos de municipios conquistados
-    // Buscamos los bordes que pertenecen a municipios descubiertos
     List<List<LatLng>> holes = [];
-    
-    // Como municipios_borders.json es solo una lista de trayectorias, 
-    // y no tenemos el nombre vinculado en el JSON, vamos a usar una técnica de 
-    // 'proximidad': si un borde tiene un punto cerca de un POI descubierto, es un hueco.
     for (var border in poiProvider.borders) {
       if (border.isNotEmpty) {
         bool isDiscovered = false;
         for (var poi in poiProvider.allPois) {
           if (poiProvider.discoveredMunicipios.contains(poi.municipio)) {
-             // Comprobamos si este borde pertenece a este municipio (simplificado por cercanía)
              double d = Geolocator.distanceBetween(border[0].latitude, border[0].longitude, poi.lat, poi.lng);
-             if (d < 5000) { // Si el borde está a menos de 5km de un POI del municipio descubierto
+             if (d < 5000) { 
                isDiscovered = true;
                break;
              }
@@ -93,7 +73,7 @@ class _MapScreenState extends State<MapScreen> {
         title: const Text("Tenerife Quest", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
         backgroundColor: Colors.white.withOpacity(0.8),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(20))),
-        automaticallyImplyLeading: false, // Remove drawer icon
+        automaticallyImplyLeading: false, 
       ),
       body: Stack(
         children: [
@@ -117,7 +97,6 @@ class _MapScreenState extends State<MapScreen> {
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.example.tnf_datos_app',
               ),
-              // LA NUEVA CAPA DE NIEBLA (AZUL MARINO PROFUNDO)
               if (_showFog)
                 PolygonLayer(
                   polygons: [
@@ -129,7 +108,7 @@ class _MapScreenState extends State<MapScreen> {
                         const LatLng(27.0, -18.0),
                       ],
                       holePointsList: holes,
-                      color: const Color(0xFF001529).withOpacity(0.85), // Azul marino profundo
+                      color: const Color(0xFF001529).withOpacity(0.85),
                       borderStrokeWidth: 0,
                     ),
                   ],
@@ -137,7 +116,7 @@ class _MapScreenState extends State<MapScreen> {
               PolylineLayer(
                 polylines: poiProvider.borders.map((border) => Polyline(
                   points: border,
-                  color: Colors.white.withOpacity(0.3), // Bordes más elegantes
+                  color: Colors.white.withOpacity(0.3),
                   strokeWidth: 1.5,
                 )).toList(),
               ),
@@ -148,9 +127,8 @@ class _MapScreenState extends State<MapScreen> {
                       point: LatLng(poi.lat, poi.lng),
                       width: 45, height: 45,
                       child: Semantics(
-                        label: "Punto de interés: ${poi.name}. ${poiProvider.discoveredPoiIds.contains(poi.id) ? 'Descubierto' : 'Oculto'}",
+                        label: "Punto: ${poi.name}",
                         button: true,
-                        onTapHint: "Ver detalles de ${poi.name}",
                         child: GestureDetector(
                           onTap: () => _showPOISheet(poi, poiProvider),
                           child: _buildMarkerIcon(Icons.nature_people, Colors.green[700]!),
@@ -162,16 +140,14 @@ class _MapScreenState extends State<MapScreen> {
                       point: LatLng(bic.lat, bic.lng),
                       width: 45, height: 45,
                       child: Semantics(
-                        label: "Patrimonio Cultural: ${bic.name}",
+                        label: "BIC: ${bic.name}",
                         button: true,
-                        onTapHint: "Ver detalles de ${bic.name}",
                         child: GestureDetector(
                           onTap: () => _showBICSheet(bic),
                           child: _buildMarkerIcon(Icons.account_balance, Colors.amber[800]!),
                         ),
                       ),
                     )),
-                  // Movemos la ubicación actual al final para que se dibuje ENCIMA
                   if (poiProvider.currentPosition != null)
                     Marker(
                       point: LatLng(poiProvider.currentPosition!.latitude, poiProvider.currentPosition!.longitude),
@@ -183,23 +159,23 @@ class _MapScreenState extends State<MapScreen> {
             ],
           ),
           
+          if (poiProvider.currentPosition != null)
+            _buildSafetyBanner(poiProvider),
+
           Positioned(
             top: 110,
             left: 0, right: 0,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Semantics(
-                label: "Filtros del mapa",
-                child: Row(
-                  children: [
-                    _filterChip("Ver Niebla", _showFog, (v) => setState(() => _showFog = v), Icons.cloud),
-                    const SizedBox(width: 8),
-                    _filterChip("Naturaleza", _showNature, (v) => setState(() => _showNature = v), Icons.forest),
-                    const SizedBox(width: 8),
-                    _filterChip("Cultura (BIC)", _showBICs, (v) => setState(() => _showBICs = v), Icons.account_balance),
-                  ],
-                ),
+              child: Row(
+                children: [
+                  _filterChip("Ver Niebla", _showFog, (v) => setState(() => _showFog = v), Icons.cloud),
+                  const SizedBox(width: 8),
+                  _filterChip("Naturaleza", _showNature, (v) => setState(() => _showNature = v), Icons.forest),
+                  const SizedBox(width: 8),
+                  _filterChip("Cultura (BIC)", _showBICs, (v) => setState(() => _showBICs = v), Icons.account_balance),
+                ],
               ),
             ),
           ),
@@ -207,10 +183,7 @@ class _MapScreenState extends State<MapScreen> {
           Positioned(
             bottom: 30,
             right: 16,
-            child: Semantics(
-              label: "Tu puntuación eco",
-              child: _buildScoreCard(poiProvider),
-            ),
+            child: _buildScoreCard(poiProvider),
           ),
 
           if (poiProvider.selectedItinerary != null)
@@ -221,44 +194,72 @@ class _MapScreenState extends State<MapScreen> {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 70), // Lo subimos para que no choque
+        padding: const EdgeInsets.only(bottom: 70),
         child: FloatingActionButton(
           onPressed: () {
             if (poiProvider.currentPosition != null) {
               final lat = poiProvider.currentPosition!.latitude;
               final lng = poiProvider.currentPosition!.longitude;
-              
-              // Comprobamos si la ubicación está dentro de la "zona segura" de Tenerife
               if (lat > 27.7 && lat < 28.9 && lng > -17.2 && lng < -15.8) {
                 _mapController.move(LatLng(lat, lng), 14.0);
                 return;
               }
             }
-            
-            // Si no hay ubicación o está fuera de la zona, vuelve al centro de la isla
             _mapController.rotate(0);
             _mapController.move(const LatLng(28.2916, -16.6291), 10.0);
           },
           backgroundColor: Colors.white,
-          child: const Icon(Icons.my_location, color: Colors.blue), // Cambiamos a icono de ubicación
+          child: const Icon(Icons.my_location, color: Colors.blue),
         ),
       ),
     );
   }
 
+  Widget _buildSafetyBanner(POIProvider provider) {
+    String? currentMuni;
+    try {
+      currentMuni = provider.allPois.firstWhere((p) => 
+        Geolocator.distanceBetween(provider.currentPosition!.latitude, provider.currentPosition!.longitude, p.lat, p.lng) < 5000
+      ).municipio;
+    } catch (e) { currentMuni = null; }
+
+    if (currentMuni != null && provider.activeAlerts.containsKey(currentMuni)) {
+      return Positioned(
+        top: 90, left: 20, right: 20,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.red[700],
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [const BoxShadow(color: Colors.black26, blurRadius: 10)],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "PELIGRO EN ${currentMuni.toUpperCase()}: ${provider.activeAlerts[currentMuni]}",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   Widget _filterChip(String label, bool selected, Function(bool) onSelected, IconData icon) {
-    return Semantics(
+    return FilterChip(
+      label: Text(label),
       selected: selected,
-      label: "Filtro: $label",
-      child: FilterChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: onSelected,
-        avatar: Icon(icon, size: 18, color: selected ? Colors.white : Colors.green, semanticLabel: ""),
-        backgroundColor: Colors.white.withOpacity(0.9),
-        selectedColor: Colors.green,
-        labelStyle: TextStyle(color: selected ? Colors.white : Colors.black87),
-      ),
+      onSelected: onSelected,
+      avatar: Icon(icon, size: 18, color: selected ? Colors.white : Colors.green),
+      backgroundColor: Colors.white.withOpacity(0.9),
+      selectedColor: Colors.green,
+      labelStyle: TextStyle(color: selected ? Colors.white : Colors.black87),
     );
   }
 
@@ -302,51 +303,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildModernDrawer(POIProvider provider) {
-    return Drawer(
-      child: Column(
-        children: [
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
-            accountName: const Text("Explorador de Tenerife", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            accountEmail: Text("Nivel: ${provider.points > 500 ? 'Guardián de la Isla' : 'Eco-Viajero'}"),
-            currentAccountPicture: const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.person, size: 40, color: Colors.green)),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                const ListTile(title: Text("FILTRAR POR ZONA", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
-                ...["Todos", "Parque Nacional del Teide", "Parque Rural de Anaga", "Corona Forestal"].map((e) => ListTile(
-                  title: Text(e),
-                  leading: const Icon(Icons.map_outlined),
-                  selected: provider.selectedEspacio == e,
-                  onTap: () {
-                    provider.setFilter(e);
-                    final p = provider.getFirstPoiInEspacio(e);
-                    if (p != null) _moveTo(p.lat, p.lng);
-                    Navigator.pop(context);
-                  },
-                )),
-                const Divider(),
-                const ListTile(title: Text("BIC CERCANOS", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
-                ...provider.bics.take(5).map((bic) => ListTile(
-                  title: Text(bic.name),
-                  subtitle: Text(bic.category),
-                  leading: const Icon(Icons.account_balance, color: Colors.amber),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showBICSheet(bic);
-                  },
-                )),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showPOISheet(POI poi, POIProvider provider) {
     double? dist;
     if (provider.currentPosition != null) {
@@ -376,78 +332,53 @@ class _MapScreenState extends State<MapScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(child: Text(poi.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
-                  Semantics(
-                    label: "Municipio: Tenerife",
-                    child: Text(
-                      "TENERIFE", 
-                      style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold, letterSpacing: 1.2),
-                    ),
-                  ),
+                  Text("TENERIFE", style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 10),
               Text(poi.type, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-              if (dist != null) 
-                Semantics(
-                  label: "Distancia: ${ (dist/1000).toStringAsFixed(1) } kilómetros",
-                  child: Text("A ${ (dist/1000).toStringAsFixed(1) } km de ti", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                ),
+              if (dist != null) Text("A ${ (dist/1000).toStringAsFixed(1) } km de ti", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
               const Divider(height: 30),
               const Text("Información", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text(poi.description, style: const TextStyle(fontSize: 16, height: 1.5)),
               const SizedBox(height: 30),
-              Semantics(
-                label: "Confirmar visita para ganar puntos",
-                enabled: (dist != null && dist < 500),
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text("REGISTRAR VISITA (CHECK-IN)"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: (dist != null && dist < 500) ? () {
-                    provider.checkIn(poi);
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Eco-Puntos sumados! Has desbloqueado esta zona.")));
-                  } : null,
+              ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text("REGISTRAR VISITA (CHECK-IN)"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
+                onPressed: (dist != null && dist < 500) ? () {
+                  provider.checkIn(poi);
+                  Navigator.pop(context);
+                } : null,
               ),
               const SizedBox(height: 12),
-              Semantics(
-                label: "Reportar incidencia en este lugar",
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.report_problem, color: Colors.orange),
-                  label: const Text("REPORTAR INCIDENCIA (Ciencia Ciudadana)"),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showReportDialog(context, poi, provider);
-                  },
+              OutlinedButton.icon(
+                icon: const Icon(Icons.report_problem, color: Colors.orange),
+                label: const Text("REPORTAR INCIDENCIA"),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showReportDialog(context, poi, provider);
+                },
               ),
               const SizedBox(height: 10),
-              // BOTÓN PARA DEMO
               TextButton.icon(
                 icon: const Icon(Icons.bug_report),
-                label: const Text("Simular Visita (Desbloquear para demo)"),
+                label: const Text("Simular Visita (Demo)"),
                 onPressed: () {
                   provider.forceCheckIn(poi);
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Zona desbloqueada por simulación!")));
                 },
               ),
-              if (dist != null && dist >= 500)
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Center(child: Text("Debes estar a menos de 500m", style: TextStyle(color: Colors.red, fontSize: 12))),
-                ),
             ],
           ),
         ),
@@ -485,13 +416,10 @@ class _MapScreenState extends State<MapScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(child: Text(bic.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFB45309)))),
-                  Semantics(
-                    label: "Patrimonio Cultural",
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: Colors.amber[100], borderRadius: BorderRadius.circular(20)),
-                      child: Text("BIC", style: TextStyle(color: Colors.amber[900], fontWeight: FontWeight.bold)),
-                    ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: Colors.amber[100], borderRadius: BorderRadius.circular(20)),
+                    child: Text("BIC", style: TextStyle(color: Colors.amber[900], fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -503,41 +431,29 @@ class _MapScreenState extends State<MapScreen> {
               const SizedBox(height: 8),
               Text(bic.description, style: const TextStyle(fontSize: 16, height: 1.5)),
               const SizedBox(height: 30),
-              
-              Semantics(
-                label: "Conquistar este patrimonio",
-                enabled: (dist != null && dist < 500),
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text("REGISTRAR VISITA (CHECK-IN)"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber[800],
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: (dist != null && dist < 500) ? () {
-                    provider.checkIn(bic);
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Patrimonio Conquistado! Eco-Puntos sumados.")));
-                  } : null,
+              ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text("REGISTRAR VISITA (CHECK-IN)"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber[800],
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
+                onPressed: (dist != null && dist < 500) ? () {
+                  provider.checkIn(bic);
+                  Navigator.pop(context);
+                } : null,
               ),
               const SizedBox(height: 12),
               TextButton.icon(
                 icon: const Icon(Icons.bug_report),
-                label: const Text("Simular Visita (Desbloquear para demo)"),
+                label: const Text("Simular Visita (Demo)"),
                 onPressed: () {
                   provider.forceCheckIn(bic);
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Patrimonio desbloqueado por simulación!")));
                 },
               ),
-              if (dist != null && dist >= 500)
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Center(child: Text("Debes estar a menos de 500m", style: TextStyle(color: Colors.red, fontSize: 12))),
-                ),
             ],
           ),
         ),
@@ -581,7 +497,7 @@ class _MapScreenState extends State<MapScreen> {
               await provider.sendReport(poi.id, selectedIssue, commentController.text);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text("¡Reporte enviado! +50 Eco-Puntos por tu colaboración ciudadana."),
+                  content: Text("¡Reporte enviado! +50 Eco-Puntos."),
                   backgroundColor: Colors.green,
                 ));
               }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:vibration/vibration.dart';
 import '../models/poi.dart';
 import '../models/itinerary.dart';
 import '../models/bic.dart';
@@ -30,8 +31,13 @@ class POIProvider with ChangeNotifier {
   List<BIC> _filteredBics = [];
   List<List<LatLng>> _borders = [];
   Set<int> _discoveredPoiIds = {};
-  Set<String> _discoveredMunicipios = {}; // NUEVO: Municipios sin niebla
+  Set<String> _discoveredMunicipios = {}; 
   List<Visit> _visits = [];
+  
+  Map<String, String> _activeAlerts = {
+    "Santa Cruz de Tenerife": "ALERTA POR VIENTO",
+    "La Orotava": "RIESGO DE INCENDIO",
+  };
   
   String _selectedEspacio = "Todos";
   Itinerary? _selectedItinerary;
@@ -64,6 +70,7 @@ class POIProvider with ChangeNotifier {
   Set<int> get discoveredPoiIds => _discoveredPoiIds;
   Set<String> get discoveredMunicipios => _discoveredMunicipios;
   List<Visit> get visits => _visits;
+  Map<String, String> get activeAlerts => _activeAlerts;
   Position? get currentPosition => _currentPosition;
   int get points => _points;
   String get selectedEspacio => _selectedEspacio;
@@ -102,7 +109,6 @@ class POIProvider with ChangeNotifier {
     _filterPois();
     _filterBics();
 
-    // Empezamos con un municipio desbloqueado para la demo
     if (_allPois.isNotEmpty) {
       _unlockMunicipality(_allPois[0].municipio);
     }
@@ -114,7 +120,8 @@ class POIProvider with ChangeNotifier {
     if (_discoveredMunicipios.contains(muni)) return;
     _discoveredMunicipios.add(muni);
     
-    // Al desbloquear el municipio, desbloqueamos todos sus puntos
+    try { Vibration.vibrate(duration: 100); } catch (e) {}
+    
     final sameMuniPois = _allPois.where((p) => p.municipio == muni);
     for (var p in sameMuniPois) {
       _discoveredPoiIds.add(p.id);
@@ -186,8 +193,6 @@ class POIProvider with ChangeNotifier {
         double dist = Geolocator.distanceBetween(
           pos.latitude, pos.longitude, poi.lat, poi.lng
         );
-        
-        // Si estamos a menos de 2km de cualquier punto, desbloqueamos el municipio
         if (dist < 2000) {
           _unlockMunicipality(poi.municipio);
           if (!_visits.any((v) => v.poi.municipio == poi.municipio)) {
@@ -202,6 +207,8 @@ class POIProvider with ChangeNotifier {
     _points += 100;
     String muni = item is POI ? item.municipio : (item as BIC).municipio;
     _unlockMunicipality(muni);
+
+    try { Vibration.vibrate(pattern: [0, 100, 50, 100]); } catch (e) {}
 
     _visits.add(Visit(
       poi: item is POI ? item : POI(

@@ -46,24 +46,35 @@ class ApiService {
     }
   }
 
-  Future<List<BIC>> fetchBICs() async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/bics'));
-      if (response.statusCode == 200) {
-        List<dynamic> body = json.decode(response.body);
-        return body.map((dynamic item) => BIC.fromJson(item)).toList();
-      } else {
-        throw "Error fetching BICs";
-      }
-    } catch (e) {
-      print(e);
-      return [];
-    }
-  }
-
-    Future<List<dynamic>> fetchBordersRaw() async {
-
+    Future<List<BIC>> fetchBICs() async {
       try {
+        final response = await http.get(Uri.parse('$baseUrl/bics'));
+        if (response.statusCode == 200) {
+          List<dynamic> body = json.decode(response.body);
+          return body.map((dynamic item) => BIC.fromJson(item)).toList();
+        } else {
+          throw "Error fetching BICs";
+        }
+      } catch (e) {
+        print(e);
+        return [];
+      }
+    }
+  
+    Future<List<dynamic>> fetchEntornosRaw() async {
+      try {
+        final response = await http.get(Uri.parse('$baseUrl/entornos'));
+        if (response.statusCode == 200) {
+          return (json.decode(response.body)['features'] as List);
+        }
+        return [];
+      } catch (e) {
+        return [];
+      }
+    }
+  
+    Future<List<dynamic>> fetchBordersRaw() async {
+        try {
 
         final response = await http.get(Uri.parse('$baseUrl/borders'));
 
