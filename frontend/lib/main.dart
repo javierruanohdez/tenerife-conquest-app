@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/poi_provider.dart';
-import 'screens/home_screen.dart';
+import 'main_container.dart';
 
 void main() {
   runApp(
@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const HomeScreen(),
+      home: const MainContainer(),
       debugShowCheckedModeBanner: false,
     );
   }

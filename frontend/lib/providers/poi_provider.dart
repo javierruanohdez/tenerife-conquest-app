@@ -6,6 +6,14 @@ import '../models/itinerary.dart';
 import '../models/bic.dart';
 import '../services/api_service.dart';
 
+class Visit {
+  final POI poi;
+  final DateTime date;
+  final String photoUrl;
+
+  Visit({required this.poi, required this.date, this.photoUrl = "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"});
+}
+
 class POIProvider with ChangeNotifier {
   List<POI> _allPois = [];
   List<POI> _filteredPois = [];
@@ -14,6 +22,7 @@ class POIProvider with ChangeNotifier {
   List<BIC> _filteredBics = [];
   List<List<LatLng>> _borders = [];
   Set<int> _discoveredPoiIds = {};
+  List<Visit> _visits = [];
   
   String _selectedEspacio = "Todos";
   Itinerary? _selectedItinerary;
@@ -29,6 +38,7 @@ class POIProvider with ChangeNotifier {
   List<BIC> get bics => _filteredBics;
   List<List<LatLng>> get borders => _borders;
   Set<int> get discoveredPoiIds => _discoveredPoiIds;
+  List<Visit> get visits => _visits;
   Position? get currentPosition => _currentPosition;
   int get points => _points;
   String get selectedEspacio => _selectedEspacio;
@@ -126,6 +136,7 @@ class POIProvider with ChangeNotifier {
   void forceCheckIn(POI poi) {
     _points += 100;
     _discoveredPoiIds.add(poi.id);
+    _visits.add(Visit(poi: poi, date: DateTime.now()));
     notifyListeners();
   }
 
@@ -143,6 +154,7 @@ class POIProvider with ChangeNotifier {
       int reward = poi.saturation == 'low' ? 200 : (poi.saturation == 'medium' ? 100 : 50);
       _points += reward;
       _discoveredPoiIds.add(poi.id);
+      _visits.add(Visit(poi: poi, date: DateTime.now()));
       notifyListeners();
     }
   }

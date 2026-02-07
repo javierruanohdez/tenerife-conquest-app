@@ -85,8 +85,8 @@ class _MapScreenState extends State<MapScreen> {
         title: const Text("Tenerife Eco-Rutas", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
         backgroundColor: Colors.white.withOpacity(0.8),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(20))),
+        automaticallyImplyLeading: false, // Remove drawer icon
       ),
-      drawer: _buildModernDrawer(poiProvider),
       body: Stack(
         children: [
           FlutterMap(
@@ -94,6 +94,12 @@ class _MapScreenState extends State<MapScreen> {
             options: MapOptions(
               initialCenter: const LatLng(28.2916, -16.6291),
               initialZoom: 10.0,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(
+                  const LatLng(27.9, -17.0),
+                  const LatLng(28.6, -16.0),
+                ),
+              ),
             ),
             children: [
               TileLayer(
