@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/map_screen.dart';
 import 'screens/conquest_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/ranking_screen.dart';
 
 class MainContainer extends StatefulWidget {
   const MainContainer({super.key});
@@ -13,22 +14,27 @@ class MainContainer extends StatefulWidget {
 class _MainContainerState extends State<MainContainer> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    MapScreen(),
-    const ConquestScreen(),
-    const ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+        index: _getAdjustedIndex(),
+        children: [
+          MapScreen(),
+          const RankingScreen(),
+          const ConquestScreen(),
+          const ProfileScreen(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          if (index == 2) { 
+            _showCameraAction(context);
+          } else {
+            setState(() => _currentIndex = index);
+          }
+        },
         selectedItemColor: Colors.green[800],
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
@@ -37,6 +43,15 @@ class _MainContainerState extends State<MainContainer> {
             icon: Icon(Icons.map_outlined),
             activeIcon: Icon(Icons.map),
             label: "Mapa",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group_outlined),
+            activeIcon: Icon(Icons.group),
+            label: "Grupos",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.photo_camera, size: 35, color: Colors.green),
+            label: "Captura",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.emoji_events_outlined),
@@ -50,6 +65,20 @@ class _MainContainerState extends State<MainContainer> {
           ),
         ],
       ),
+    );
+  }
+
+  int _getAdjustedIndex() {
+    if (_currentIndex == 0) return 0;
+    if (_currentIndex == 1) return 1;
+    if (_currentIndex == 3) return 2;
+    if (_currentIndex == 4) return 3;
+    return 0;
+  }
+
+  void _showCameraAction(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Abriendo cámara para Captura Tenerife...")),
     );
   }
 }

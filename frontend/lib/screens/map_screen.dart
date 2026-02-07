@@ -63,11 +63,28 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final poiProvider = Provider.of<POIProvider>(context);
     
-    // Create holes for discovered areas
+    // CAPA DE NIEBLA: Polígonos de municipios conquistados
+    // Buscamos los bordes que pertenecen a municipios descubiertos
     List<List<LatLng>> holes = [];
-    for (int id in poiProvider.discoveredPoiIds) {
-      final p = poiProvider.allPois.firstWhere((element) => element.id == id);
-      holes.add(_generateCirclePoints(LatLng(p.lat, p.lng), 1500)); // 1.5km discovery radius
+    
+    // Como municipios_borders.json es solo una lista de trayectorias, 
+    // y no tenemos el nombre vinculado en el JSON, vamos a usar una técnica de 
+    // 'proximidad': si un borde tiene un punto cerca de un POI descubierto, es un hueco.
+    for (var border in poiProvider.borders) {
+      if (border.isNotEmpty) {
+        bool isDiscovered = false;
+        for (var poi in poiProvider.allPois) {
+          if (poiProvider.discoveredMunicipios.contains(poi.municipio)) {
+             // Comprobamos si este borde pertenece a este municipio (simplificado por cercanía)
+             double d = Geolocator.distanceBetween(border[0].latitude, border[0].longitude, poi.lat, poi.lng);
+             if (d < 5000) { // Si el borde está a menos de 5km de un POI del municipio descubierto
+               isDiscovered = true;
+               break;
+             }
+          }
+        }
+        if (isDiscovered) holes.add(border);
+      }
     }
 
     return Scaffold(
@@ -89,8 +106,8 @@ class _MapScreenState extends State<MapScreen> {
               maxZoom: 18.0,
               cameraConstraint: CameraConstraint.contain(
                 bounds: LatLngBounds(
-                  const LatLng(27.7, -17.2), // Margen Suroeste (más mar)
-                  const LatLng(28.9, -15.8), // Margen Noreste (más mar)
+                  const LatLng(27.7, -17.2),
+                  const LatLng(28.9, -15.8),
                 ),
               ),
             ),
@@ -100,19 +117,19 @@ class _MapScreenState extends State<MapScreen> {
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.example.tnf_datos_app',
               ),
-              // THE FOG LAYER
+              // LA NUEVA CAPA DE NIEBLA (AZUL MARINO PROFUNDO)
               if (_showFog)
                 PolygonLayer(
-                  polygons: <Polygon<Object>>[
+                  polygons: [
                     Polygon(
                       points: [
-                        const LatLng(29.0, -17.5),
-                        const LatLng(29.0, -15.5),
-                        const LatLng(27.5, -15.5),
-                        const LatLng(27.5, -17.5),
+                        const LatLng(30.0, -18.0),
+                        const LatLng(30.0, -15.0),
+                        const LatLng(27.0, -15.0),
+                        const LatLng(27.0, -18.0),
                       ],
                       holePointsList: holes,
-                      color: Colors.grey.withOpacity(0.9),
+                      color: const Color(0xFF001529).withOpacity(0.85), // Azul marino profundo
                       borderStrokeWidth: 0,
                     ),
                   ],
@@ -120,18 +137,12 @@ class _MapScreenState extends State<MapScreen> {
               PolylineLayer(
                 polylines: poiProvider.borders.map((border) => Polyline(
                   points: border,
-                  color: Colors.black26,
-                  strokeWidth: 1.0,
+                  color: Colors.white.withOpacity(0.3), // Bordes más elegantes
+                  strokeWidth: 1.5,
                 )).toList(),
               ),
               MarkerLayer(
                 markers: [
-                  if (poiProvider.currentPosition != null)
-                    Marker(
-                      point: LatLng(poiProvider.currentPosition!.latitude, poiProvider.currentPosition!.longitude),
-                      width: 40, height: 40,
-                      child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
-                    ),
                   if (_showNature)
                     ...poiProvider.pois.map((poi) => Marker(
                       point: LatLng(poi.lat, poi.lng),
@@ -146,6 +157,27 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                       ),
                     )),
+                  if (_showBICs)
+                    ...poiProvider.bics.map((bic) => Marker(
+                      point: LatLng(bic.lat, bic.lng),
+                      width: 45, height: 45,
+                      child: Semantics(
+                        label: "Patrimonio Cultural: ${bic.name}",
+                        button: true,
+                        onTapHint: "Ver detalles de ${bic.name}",
+                        child: GestureDetector(
+                          onTap: () => _showBICSheet(bic),
+                          child: _buildMarkerIcon(Icons.account_balance, Colors.amber[800]!),
+                        ),
+                      ),
+                    )),
+                  // Movemos la ubicación actual al final para que se dibuje ENCIMA
+                  if (poiProvider.currentPosition != null)
+                    Marker(
+                      point: LatLng(poiProvider.currentPosition!.latitude, poiProvider.currentPosition!.longitude),
+                      width: 40, height: 40,
+                      child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
+                    ),
                 ],
               ),
             ],
@@ -188,9 +220,28 @@ class _MapScreenState extends State<MapScreen> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => poiProvider.loadData(),
-        child: const Icon(Icons.refresh),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 70), // Lo subimos para que no choque
+        child: FloatingActionButton(
+          onPressed: () {
+            if (poiProvider.currentPosition != null) {
+              final lat = poiProvider.currentPosition!.latitude;
+              final lng = poiProvider.currentPosition!.longitude;
+              
+              // Comprobamos si la ubicación está dentro de la "zona segura" de Tenerife
+              if (lat > 27.7 && lat < 28.9 && lng > -17.2 && lng < -15.8) {
+                _mapController.move(LatLng(lat, lng), 14.0);
+                return;
+              }
+            }
+            
+            // Si no hay ubicación o está fuera de la zona, vuelve al centro de la isla
+            _mapController.rotate(0);
+            _mapController.move(const LatLng(28.2916, -16.6291), 10.0);
+          },
+          backgroundColor: Colors.white,
+          child: const Icon(Icons.my_location, color: Colors.blue), // Cambiamos a icono de ubicación
+        ),
       ),
     );
   }
@@ -405,23 +456,90 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showBICSheet(BIC bic) {
+    final provider = Provider.of<POIProvider>(context, listen: false);
+    double? dist;
+    if (provider.currentPosition != null) {
+      dist = Geolocator.distanceBetween(provider.currentPosition!.latitude, provider.currentPosition!.longitude, bic.lat, bic.lng);
+    }
+
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(bic.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFB45309))),
-            const SizedBox(height: 8),
-            Chip(label: Text(bic.category), backgroundColor: Colors.amber[100]),
-            const SizedBox(height: 16),
-            Text(bic.description, style: const TextStyle(fontSize: 16, height: 1.4)),
-            const SizedBox(height: 24),
-            Text("Municipio: ${bic.municipio}", style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.4,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text(bic.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFB45309)))),
+                  Semantics(
+                    label: "Patrimonio Cultural",
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(color: Colors.amber[100], borderRadius: BorderRadius.circular(20)),
+                      child: Text("BIC", style: TextStyle(color: Colors.amber[900], fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(bic.category, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+              if (dist != null) Text("A ${ (dist/1000).toStringAsFixed(1) } km de ti", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+              const Divider(height: 30),
+              const Text("Información Histórica", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(bic.description, style: const TextStyle(fontSize: 16, height: 1.5)),
+              const SizedBox(height: 30),
+              
+              Semantics(
+                label: "Conquistar este patrimonio",
+                enabled: (dist != null && dist < 500),
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text("REGISTRAR VISITA (CHECK-IN)"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber[800],
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: (dist != null && dist < 500) ? () {
+                    provider.checkIn(bic);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Patrimonio Conquistado! Eco-Puntos sumados.")));
+                  } : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                icon: const Icon(Icons.bug_report),
+                label: const Text("Simular Visita (Desbloquear para demo)"),
+                onPressed: () {
+                  provider.forceCheckIn(bic);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Patrimonio desbloqueado por simulación!")));
+                },
+              ),
+              if (dist != null && dist >= 500)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Center(child: Text("Debes estar a menos de 500m", style: TextStyle(color: Colors.red, fontSize: 12))),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -19,10 +19,29 @@ class ProfileScreen extends StatelessWidget {
             _buildHeader(provider),
             const SizedBox(height: 20),
             _buildStatsRow(provider),
+            const SizedBox(height: 10),
+            _buildGlobalRankCard(provider),
             const SizedBox(height: 20),
             if (visits.isNotEmpty) _buildDataDashboard(provider),
             _buildMenu(context),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlobalRankCard(POIProvider provider) {
+    final ranking = provider.globalRanking;
+    final myPos = ranking.indexWhere((e) => e.isMe) + 1;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Card(
+        color: Colors.amber[50],
+        child: ListTile(
+          leading: const Icon(Icons.stars, color: Colors.amber),
+          title: const Text("Posición Global", style: TextStyle(fontWeight: FontWeight.bold)),
+          trailing: Text("#$myPos", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.amber)),
         ),
       ),
     );
@@ -146,16 +165,31 @@ class ProfileScreen extends StatelessWidget {
           onTap: () {},
         ),
         ListTile(
-          leading: const Icon(Icons.help_outline),
-          title: const Text("Ayuda y Soporte"),
+          leading: const Icon(Icons.info_outline),
+          title: const Text("Acerca de Tenerife Quest"),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () {},
+          onTap: () {
+            _showAboutDialog(context);
+          },
         ),
-        ListTile(
-          leading: const Icon(Icons.logout, color: Colors.red),
-          title: const Text("Cerrar Sesión", style: TextStyle(color: Colors.red)),
-          onTap: () {},
-        ),
+      ],
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: "Tenerife Quest",
+      applicationVersion: "5.0.0",
+      applicationIcon: const Icon(Icons.explore, size: 50, color: Colors.green),
+      children: [
+        const SizedBox(height: 20),
+        const Text("Desarrollado por:", style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text("- Yone Suárez"),
+        const Text("- Lucas Mendoza"),
+        const Text("- Javier Ruano"),
+        const SizedBox(height: 20),
+        const Text("Proyecto de Ingeniería de Datos (ULPGC) para el II Concurso de Datos Abiertos del Cabildo de Tenerife."),
       ],
     );
   }

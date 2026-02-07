@@ -15,7 +15,7 @@ let bics = [];
 
 const geojsonPath = path.join(__dirname, 'puntos-de-interes.geojson');
 const itPath = path.join(__dirname, 'itinerarios.csv');
-const bicPath = path.join(__dirname, 'bics.csv');
+const bicGeojsonPath = path.join(__dirname, 'bic_inmuebles.geojson');
 
 // Load POIs
 function loadPOIs() {
@@ -24,17 +24,27 @@ function loadPOIs() {
       let data = fs.readFileSync(geojsonPath, 'utf8');
       if (data.charCodeAt(0) === 0xFEFF) data = data.slice(1);
       const geojson = JSON.parse(data);
-      pois = geojson.features.map((feature, index) => ({
-        id: index + 1,
-        name: feature.properties.nombre || "Sin nombre",
-        lat: feature.geometry.coordinates[1],
-        lng: feature.geometry.coordinates[0],
-        type: feature.properties.tipo || "Interés",
-        description: feature.properties.descripcion || "Sin descripción.",
-        enp: feature.properties.enp || "",
-        municipio: "Tenerife", // Default
-        saturation: "none"
-      }));
+      pois = geojson.features.map((feature, index) => {
+        const enp = feature.properties.enp || "";
+        let muni = "Tenerife";
+        
+        if (enp.includes("Anaga")) muni = "Santa Cruz de Tenerife";
+        else if (enp.includes("Teide")) muni = "La Orotava";
+        else if (enp.includes("Corona Forestal")) muni = "Vilaflor";
+        else if (enp.includes("Teno")) muni = "Buenavista del Norte";
+        
+        return {
+          id: index + 1,
+          name: feature.properties.nombre || "Sin nombre",
+          lat: feature.geometry.coordinates[1],
+          lng: feature.geometry.coordinates[0],
+          type: feature.properties.tipo || "Interés",
+          description: feature.properties.descripcion || "Sin descripción.",
+          enp: enp,
+          municipio: muni,
+          saturation: "none"
+        };
+      });
       console.log(`[SUCCESS] Loaded ${pois.length} POIs`);
     }
   } catch (err) { console.error("[ERROR] POIs:", err.message); }
@@ -63,50 +73,62 @@ function loadItinerarios() {
   }
 }
 
-// Load BICs
-// Since the BIC CSV lacks coordinates, we link them to municipal areas or relevant POIs
+// Load BICs from GeoJSON
 function loadBICs() {
-  const results = [];
-  if (fs.existsSync(bicPath)) {
-    fs.createReadStream(bicPath)
-      .pipe(csv())
-      .on('data', (data) => results.push(data))
-      .on('end', () => {
-        bics = results.map((b, index) => ({
+  try {
+    if (fs.existsSync(bicGeojsonPath)) {
+      let data = fs.readFileSync(bicGeojsonPath, 'utf8');
+      if (data.charCodeAt(0) === 0xFEFF) data = data.slice(1);
+      const geojson = JSON.parse(data);
+      
+      bics = geojson.features.map((feature, index) => {
+        let lat = 28.2916;
+        let lng = -16.6291;
+
+        if (feature.geometry && feature.geometry.coordinates) {
+          let firstPoint;
+          if (feature.geometry.type === 'Point') {
+            firstPoint = feature.geometry.coordinates;
+          } else if (feature.geometry.type === 'Polygon') {
+            firstPoint = feature.geometry.coordinates[0][0];
+          } else if (feature.geometry.type === 'MultiPolygon') {
+            firstPoint = feature.geometry.coordinates[0][0][0];
+          }
+          
+          if (firstPoint && Array.isArray(firstPoint)) {
+            lng = firstPoint[0];
+            lat = firstPoint[1];
+          }
+        }
+
+        return {
           id: index + 10000,
-          name: b.bic_nombre,
-          category: b.bic_categoria,
-          municipio: b.municipio_nombre,
-          description: b.bic_descripcion,
-          url: b.boletin1_url
-        }));
-        console.log(`[SUCCESS] Loaded ${bics.length} BICs`);
+          name: feature.properties.bic_nombre || "Patrimonio",
+          category: feature.properties.bic_categoria || "BIC",
+          municipio: feature.properties.municipio_nombre || "Tenerife",
+          description: feature.properties.bic_descripcion || "",
+          url: feature.properties.boletin1_url || "",
+          lat: lat,
+          lng: lng
+        };
       });
-  }
+      console.log(`[SUCCESS] Loaded ${bics.length} BICs from GeoJSON`);
+    }
+  } catch (err) { console.error("[ERROR] BICs:", err.message); }
 }
 
 loadPOIs();
 loadItinerarios();
 loadBICs();
 
-const getSaturation = () => {
-  const rand = Math.random();
-  if (rand < 0.4) return "low"; 
-  if (rand < 0.7) return "medium";
-  return "high"; 
-};
-
 app.get('/api/pois', (req, res) => {
   res.json(pois);
 });
 
-// NEW: Smart Recommendation Endpoint
 app.get('/api/recommendation', (req, res) => {
   if (pois.length > 0) {
     const randomPoi = pois[Math.floor(Math.random() * pois.length)];
-    // Encontrar BICs en el mismo municipio o ENP
     const relatedBics = bics.filter(b => randomPoi.enp.includes(b.municipio) || b.municipio.includes(randomPoi.name));
-    
     res.json({
       poi: randomPoi,
       bics: relatedBics.slice(0, 2),
@@ -117,11 +139,9 @@ app.get('/api/recommendation', (req, res) => {
   }
 });
 
-// NEW: Endpoint de Ciencia Ciudadana (Eco-Reportes)
 app.post('/api/report', (req, res) => {
   const { poiId, type, comment } = req.body;
   console.log(`[CIENCIA CIUDADANA] Reporte recibido para POI ${poiId}: ${type} - ${comment}`);
-  // Aquí, en un sistema real, guardaríamos esto en una BBDD para el Área de Medio Ambiente
   res.json({ success: true, message: "Reporte registrado. ¡Gracias por cuidar la isla!" });
 });
 

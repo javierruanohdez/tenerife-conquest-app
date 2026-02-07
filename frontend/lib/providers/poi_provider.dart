@@ -14,6 +14,14 @@ class Visit {
   Visit({required this.poi, required this.date, this.photoUrl = "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"});
 }
 
+class Explorer {
+  final String name;
+  final int conquests;
+  final bool isMe;
+
+  Explorer({required this.name, required this.conquests, this.isMe = false});
+}
+
 class POIProvider with ChangeNotifier {
   List<POI> _allPois = [];
   List<POI> _filteredPois = [];
@@ -22,6 +30,7 @@ class POIProvider with ChangeNotifier {
   List<BIC> _filteredBics = [];
   List<List<LatLng>> _borders = [];
   Set<int> _discoveredPoiIds = {};
+  Set<String> _discoveredMunicipios = {}; // NUEVO: Municipios sin niebla
   List<Visit> _visits = [];
   
   String _selectedEspacio = "Todos";
@@ -32,18 +41,50 @@ class POIProvider with ChangeNotifier {
   int _points = 0;
   final ApiService _apiService = ApiService();
 
+  // DATOS DE RANKING SIMULADOS
+  final List<Explorer> _globalRanking = [
+    Explorer(name: "Ayoze_Anaga", conquests: 45),
+    Explorer(name: "Elena_Teide", conquests: 38),
+    Explorer(name: "Yone Explorador", conquests: 0, isMe: true),
+    Explorer(name: "Marcos_Sur", conquests: 22),
+    Explorer(name: "Guacimara_92", conquests: 15),
+  ];
+
+  final List<Explorer> _groupRanking = [
+    Explorer(name: "Elena_Teide", conquests: 38),
+    Explorer(name: "Yone Explorador", conquests: 0, isMe: true),
+    Explorer(name: "Marcos_Sur", conquests: 22),
+  ];
+
   List<POI> get pois => _filteredPois;
   List<POI> get allPois => _allPois;
   List<Itinerary> get itineraries => _itineraries;
   List<BIC> get bics => _filteredBics;
   List<List<LatLng>> get borders => _borders;
   Set<int> get discoveredPoiIds => _discoveredPoiIds;
+  Set<String> get discoveredMunicipios => _discoveredMunicipios;
   List<Visit> get visits => _visits;
   Position? get currentPosition => _currentPosition;
   int get points => _points;
   String get selectedEspacio => _selectedEspacio;
   Itinerary? get selectedItinerary => _selectedItinerary;
   Map<String, dynamic>? get recommendation => _recommendation;
+
+  List<Explorer> get globalRanking {
+    int myIndex = _globalRanking.indexWhere((e) => e.isMe);
+    _globalRanking[myIndex] = Explorer(name: "Yone Explorador", conquests: _visits.length, isMe: true);
+    final list = List<Explorer>.from(_globalRanking);
+    list.sort((a, b) => b.conquests.compareTo(a.conquests));
+    return list;
+  }
+
+  List<Explorer> get groupRanking {
+    int myIndex = _groupRanking.indexWhere((e) => e.isMe);
+    _groupRanking[myIndex] = Explorer(name: "Yone Explorador", conquests: _visits.length, isMe: true);
+    final list = List<Explorer>.from(_groupRanking);
+    list.sort((a, b) => b.conquests.compareTo(a.conquests));
+    return list;
+  }
 
   Future<void> loadData() async {
     _allPois = await _apiService.fetchPOIs();
@@ -54,21 +95,35 @@ class POIProvider with ChangeNotifier {
     final rawBorders = await _apiService.fetchBordersRaw();
     _borders = rawBorders.map((path) {
       return (path as List).map((point) {
-        return LatLng((point as List)[0], point[1]);
+        return LatLng((point as List)[0], (point as List)[1]);
       }).toList();
     }).toList();
 
     _filterPois();
     _filterBics();
 
-    // DEMO: Desbloquear algunos puntos al inicio
+    // Empezamos con un municipio desbloqueado para la demo
     if (_allPois.isNotEmpty) {
-      _discoveredPoiIds.add(_allPois[0].id);
-      if (_allPois.length > 5) _discoveredPoiIds.add(_allPois[5].id);
-      if (_allPois.length > 10) _discoveredPoiIds.add(_allPois[10].id);
+      _unlockMunicipality(_allPois[0].municipio);
     }
 
     notifyListeners();
+  }
+
+  void _unlockMunicipality(String muni) {
+    if (_discoveredMunicipios.contains(muni)) return;
+    _discoveredMunicipios.add(muni);
+    
+    // Al desbloquear el municipio, desbloqueamos todos sus puntos
+    final sameMuniPois = _allPois.where((p) => p.municipio == muni);
+    for (var p in sameMuniPois) {
+      _discoveredPoiIds.add(p.id);
+    }
+    
+    final sameMuniBics = _bics.where((b) => b.municipio == muni);
+    for (var b in sameMuniBics) {
+      _discoveredPoiIds.add(b.id);
+    }
   }
 
   void setFilter(String espacio) {
@@ -119,50 +174,71 @@ class POIProvider with ChangeNotifier {
     }
   }
 
-  POI? getPoiForItinerary(Itinerary it) {
-    List<String> itEspacios = it.espacios.split('|').map((e) => e.trim()).toList();
-    try {
-      return _allPois.firstWhere((p) => itEspacios.any((esp) => p.enp.contains(esp)));
-    } catch (e) {
-      return null;
-    }
-  }
-
   void updateLocation(Position position) {
     _currentPosition = position;
+    _checkPassiveUnlocking(position);
     notifyListeners();
   }
 
-  void forceCheckIn(POI poi) {
-    _points += 100;
-    _discoveredPoiIds.add(poi.id);
-    _visits.add(Visit(poi: poi, date: DateTime.now()));
-    notifyListeners();
-  }
-
-  void checkIn(POI poi) {
-    if (_currentPosition == null) return;
-
-    double distance = Geolocator.distanceBetween(
-      _currentPosition!.latitude,
-      _currentPosition!.longitude,
-      poi.lat,
-      poi.lng,
-    );
-
-    if (distance <= 500) {
-      _points += 100; // Fixed reward
-      _discoveredPoiIds.add(poi.id);
-      _visits.add(Visit(poi: poi, date: DateTime.now()));
-      notifyListeners();
+  void _checkPassiveUnlocking(Position pos) {
+    for (var poi in _allPois) {
+      if (!_discoveredMunicipios.contains(poi.municipio)) {
+        double dist = Geolocator.distanceBetween(
+          pos.latitude, pos.longitude, poi.lat, poi.lng
+        );
+        
+        // Si estamos a menos de 2km de cualquier punto, desbloqueamos el municipio
+        if (dist < 2000) {
+          _unlockMunicipality(poi.municipio);
+          if (!_visits.any((v) => v.poi.municipio == poi.municipio)) {
+             _visits.add(Visit(poi: poi, date: DateTime.now()));
+          }
+        }
+      }
     }
   }
 
-  Future<void> sendReport(int poiId, String type, String comment) async {
+  void forceCheckIn(dynamic item) {
+    _points += 100;
+    String muni = item is POI ? item.municipio : (item as BIC).municipio;
+    _unlockMunicipality(muni);
+
+    _visits.add(Visit(
+      poi: item is POI ? item : POI(
+        id: item.id, name: item.name, lat: item.lat, lng: item.lng, 
+        type: "BIC", saturation: "none", description: item.description, 
+        enp: "", municipio: item.municipio
+      ), 
+      date: DateTime.now()
+    ));
+    notifyListeners();
+  }
+
+  void checkIn(dynamic item) {
+    if (_currentPosition == null) return;
+    double distance = Geolocator.distanceBetween(_currentPosition!.latitude, _currentPosition!.longitude, item.lat, item.lng);
+    if (distance <= 500) {
+      forceCheckIn(item);
+    }
+  }
+
+  POI? get nearestPoi {
+    if (_currentPosition == null || _allPois.isEmpty) return null;
+    POI? closest;
+    double minDistance = double.infinity;
+    for (var poi in _allPois) {
+      double dist = Geolocator.distanceBetween(_currentPosition!.latitude, _currentPosition!.longitude, poi.lat, poi.lng);
+      if (dist < minDistance) { minDistance = dist; closest = poi; }
+    }
+    return minDistance < 1000 ? closest : null;
+  }
+
+  Future<bool> sendReport(int poiId, String type, String comment) async {
     bool success = await _apiService.sendReport(poiId, type, comment);
     if (success) {
-      _points += 50; // Recompensa por Ciencia Ciudadana
+      _points += 50;
       notifyListeners();
     }
+    return success;
   }
 }
