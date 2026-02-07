@@ -85,10 +85,12 @@ class _MapScreenState extends State<MapScreen> {
             options: MapOptions(
               initialCenter: const LatLng(28.2916, -16.6291),
               initialZoom: 10.0,
+              minZoom: 9.0, 
+              maxZoom: 18.0,
               cameraConstraint: CameraConstraint.contain(
                 bounds: LatLngBounds(
-                  const LatLng(27.9, -17.0),
-                  const LatLng(28.6, -16.0),
+                  const LatLng(27.7, -17.2), // Margen Suroeste (más mar)
+                  const LatLng(28.9, -15.8), // Margen Noreste (más mar)
                 ),
               ),
             ),
