@@ -144,23 +144,25 @@ class _ConquestScreenState extends State<ConquestScreen> {
 
           const SizedBox(height: 10),
 
-          Container(
+                    Container(
 
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 
-            decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(30)),
+                      decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(30)),
 
-            child: const Text("CONQUISTA SOSTENIBLE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: const Text("CAPTURA TENERIFE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
 
-          ),
+                    ),
 
-        ],
+                  ],
 
-      ),
+                ),
 
-    );
+              );
 
-  }
+            }
+
+          
 
 
 
