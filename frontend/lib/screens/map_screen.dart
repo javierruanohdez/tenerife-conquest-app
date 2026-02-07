@@ -73,7 +73,7 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Tenerife Eco-Rutas", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+        title: const Text("Tenerife Quest", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
         backgroundColor: Colors.white.withOpacity(0.8),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(20))),
         automaticallyImplyLeading: false, // Remove drawer icon
