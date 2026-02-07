@@ -151,8 +151,7 @@ class POIProvider with ChangeNotifier {
     );
 
     if (distance <= 500) {
-      int reward = poi.saturation == 'low' ? 200 : (poi.saturation == 'medium' ? 100 : 50);
-      _points += reward;
+      _points += 100; // Fixed reward
       _discoveredPoiIds.add(poi.id);
       _visits.add(Visit(poi: poi, date: DateTime.now()));
       notifyListeners();

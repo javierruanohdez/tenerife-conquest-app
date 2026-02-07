@@ -46,15 +46,6 @@ class _MapScreenState extends State<MapScreen> {
     _mapController.move(LatLng(lat, lng), 14.0);
   }
 
-  Color _getSaturationColor(String saturation) {
-    switch (saturation) {
-      case 'low': return Colors.green;
-      case 'medium': return Colors.orange;
-      case 'high': return Colors.red;
-      default: return Colors.blue;
-    }
-  }
-
   List<LatLng> _generateCirclePoints(LatLng center, double radiusInMeters) {
     List<LatLng> points = [];
     const int numPoints = 20;
@@ -103,7 +94,8 @@ class _MapScreenState extends State<MapScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                urlTemplate: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+                subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.example.tnf_datos_app',
               ),
               // THE FOG LAYER
@@ -143,12 +135,12 @@ class _MapScreenState extends State<MapScreen> {
                       point: LatLng(poi.lat, poi.lng),
                       width: 45, height: 45,
                       child: Semantics(
-                        label: "Punto de interés: ${poi.name}. Saturación: ${poi.saturation}. ${poiProvider.discoveredPoiIds.contains(poi.id) ? 'Descubierto' : 'Oculto'}",
+                        label: "Punto de interés: ${poi.name}. ${poiProvider.discoveredPoiIds.contains(poi.id) ? 'Descubierto' : 'Oculto'}",
                         button: true,
                         onTapHint: "Ver detalles de ${poi.name}",
                         child: GestureDetector(
                           onTap: () => _showPOISheet(poi, poiProvider),
-                          child: _buildMarkerIcon(Icons.nature_people, _getSaturationColor(poi.saturation)),
+                          child: _buildMarkerIcon(Icons.nature_people, Colors.green[700]!),
                         ),
                       ),
                     )),
@@ -332,11 +324,10 @@ class _MapScreenState extends State<MapScreen> {
                 children: [
                   Expanded(child: Text(poi.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
                   Semantics(
-                    label: "Nivel de saturación: ${poi.saturation}",
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: _getSaturationColor(poi.saturation).withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                      child: Text(poi.saturation.toUpperCase(), style: TextStyle(color: _getSaturationColor(poi.saturation), fontWeight: FontWeight.bold)),
+                    label: "Municipio: Tenerife",
+                    child: Text(
+                      "TENERIFE", 
+                      style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold, letterSpacing: 1.2),
                     ),
                   ),
                 ],

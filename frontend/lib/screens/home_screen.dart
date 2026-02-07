@@ -99,7 +99,7 @@ class HomeScreen extends StatelessWidget {
                         context,
                         "Ruta Recomendada",
                         poiProvider.recommendation != null 
-                          ? "Hoy: ${poiProvider.recommendation!['poi']['name']} (${poiProvider.recommendation!['poi']['saturation']})"
+                          ? "Hoy: ${poiProvider.recommendation!['poi']['name']}"
                           : "Calculando mejor ruta...",
                         Icons.auto_awesome,
                         Colors.orange,

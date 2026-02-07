@@ -31,7 +31,9 @@ function loadPOIs() {
         lng: feature.geometry.coordinates[0],
         type: feature.properties.tipo || "Interés",
         description: feature.properties.descripcion || "Sin descripción.",
-        enp: feature.properties.enp || ""
+        enp: feature.properties.enp || "",
+        municipio: "Tenerife", // Default
+        saturation: "none"
       }));
       console.log(`[SUCCESS] Loaded ${pois.length} POIs`);
     }
@@ -95,21 +97,20 @@ const getSaturation = () => {
 };
 
 app.get('/api/pois', (req, res) => {
-  res.json(pois.map(p => ({ ...p, saturation: getSaturation() })));
+  res.json(pois);
 });
 
 // NEW: Smart Recommendation Endpoint
 app.get('/api/recommendation', (req, res) => {
-  const lowSaturationPois = pois.filter(p => getSaturation() === "low");
-  if (lowSaturationPois.length > 0) {
-    const randomPoi = lowSaturationPois[Math.floor(Math.random() * lowSaturationPois.length)];
+  if (pois.length > 0) {
+    const randomPoi = pois[Math.floor(Math.random() * pois.length)];
     // Encontrar BICs en el mismo municipio o ENP
     const relatedBics = bics.filter(b => randomPoi.enp.includes(b.municipio) || b.municipio.includes(randomPoi.name));
     
     res.json({
       poi: randomPoi,
-      bics: relatedBics.take ? relatedBics.take(2) : relatedBics.slice(0, 2),
-      reason: "Baja afluencia hoy. ¡Ideal para una visita tranquila!"
+      bics: relatedBics.slice(0, 2),
+      reason: "¡Lugar recomendado para visitar hoy!"
     });
   } else {
     res.json(null);

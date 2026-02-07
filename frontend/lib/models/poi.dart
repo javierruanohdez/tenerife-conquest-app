@@ -4,10 +4,10 @@ class POI {
   final double lat;
   final double lng;
   final String type;
-  final String saturation; // low, medium, high
-  final int capacity;
+  final String saturation; // none
   final String description;
   final String enp;
+  final String municipio;
 
   POI({
     required this.id,
@@ -16,22 +16,22 @@ class POI {
     required this.lng,
     required this.type,
     required this.saturation,
-    required this.capacity,
     required this.description,
     required this.enp,
+    this.municipio = "Tenerife",
   });
 
   factory POI.fromJson(Map<String, dynamic> json) {
     return POI(
       id: json['id'],
       name: json['name'] ?? "Sin nombre",
-      lat: json['lat'].toDouble(),
-      lng: json['lng'].toDouble(),
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
       type: json['type'] ?? "Interés",
-      saturation: json['saturation'] ?? "low",
-      capacity: json['capacity'] ?? 0,
+      saturation: json['saturation'] ?? "none",
       description: json['description'] ?? "",
       enp: json['enp'] ?? "",
+      municipio: json['municipio'] ?? "Tenerife",
     );
   }
 }
