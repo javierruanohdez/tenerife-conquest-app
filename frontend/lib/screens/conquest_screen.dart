@@ -216,23 +216,39 @@ class _ConquestScreenState extends State<ConquestScreen> {
 
                   children: [
 
-                    Stack(
+                                        Stack(
 
-                      children: [
+                                          children: [
 
-                        Image.network(
+                                            visit.photoUrl.startsWith("http") 
 
-                          visit.photoUrl,
+                                              ? Image.network(
 
-                          height: 220,
+                                                  visit.photoUrl,
 
-                          width: double.infinity,
+                                                  height: 220,
 
-                          fit: BoxFit.cover,
+                                                  width: double.infinity,
 
-                        ),
+                                                  fit: BoxFit.cover,
 
-                        Positioned(
+                                                )
+
+                                              : Image.file(
+
+                                                  File(visit.photoUrl),
+
+                                                  height: 220,
+
+                                                  width: double.infinity,
+
+                                                  fit: BoxFit.cover,
+
+                                                ),
+
+                                            Positioned(
+
+                    
 
                           top: 10, right: 10,
 

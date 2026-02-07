@@ -41,12 +41,14 @@ class POIProvider with ChangeNotifier {
   List<Visit> _visits = [];
   
   Map<String, String> _activeAlerts = {
-    "Santa Cruz de Tenerife": "ALERTA POR VIENTO",
-    "La Orotava": "RIESGO DE INCENDIO",
+    "SANTA CRUZ DE TENERIFE": "ALERTA POR VIENTO",
+    "OROTAVA (LA)": "RIESGO DE INCENDIO",
   };
   
   String _selectedEspacio = "Todos";
   Itinerary? _selectedItinerary;
+  String? _highlightedItineraryId;
+  bool _showAllTrails = true; // CAMBIADO A TRUE PARA TESTEO
   Map<String, dynamic>? _recommendation;
   
   Position? _currentPosition;
@@ -81,6 +83,8 @@ class POIProvider with ChangeNotifier {
   int get points => _points;
   String get selectedEspacio => _selectedEspacio;
   Itinerary? get selectedItinerary => _selectedItinerary;
+  String? get highlightedItineraryId => _highlightedItineraryId;
+  bool get showAllTrails => _showAllTrails;
   Map<String, dynamic>? get recommendation => _recommendation;
 
   List<Explorer> get globalRanking {
@@ -100,16 +104,12 @@ class POIProvider with ChangeNotifier {
   }
 
   Future<void> loadData() async {
-    print("[DEBUG] Iniciando carga de datos...");
     try {
       _allPois = await _apiService.fetchPOIs();
-      print("[DEBUG] POIs cargados: ${_allPois.length}");
-      
       _itineraries = await _apiService.fetchItineraries();
       _bics = await _apiService.fetchBICs();
       _recommendation = await _apiService.fetchRecommendation();
       
-      print("[DEBUG] Cargando bordes municipales...");
       final rawBorders = await _apiService.fetchBordersRaw();
       _borders = rawBorders.map((b) {
         final name = b['name'] as String;
@@ -124,7 +124,6 @@ class POIProvider with ChangeNotifier {
         }
         return MuniBorder(name: name, paths: paths);
       }).toList();
-      print("[DEBUG] Bordes procesados: ${_borders.length}");
 
       _filterPois();
       _filterBics();
@@ -133,9 +132,8 @@ class POIProvider with ChangeNotifier {
         _unlockMunicipality(_allPois[0].municipio);
       }
     } catch (e) {
-      print("[ERROR] Fallo en loadData: $e");
+      print("Error loading data: $e");
     } finally {
-      print("[DEBUG] Finalizando carga.");
       notifyListeners();
     }
   }
@@ -147,14 +145,10 @@ class POIProvider with ChangeNotifier {
     try { Vibration.vibrate(duration: 100); } catch (e) {}
     
     final sameMuniPois = _allPois.where((p) => p.municipio == muni);
-    for (var p in sameMuniPois) {
-      _discoveredPoiIds.add(p.id);
-    }
+    for (var p in sameMuniPois) { _discoveredPoiIds.add(p.id); }
     
     final sameMuniBics = _bics.where((b) => b.municipio == muni);
-    for (var b in sameMuniBics) {
-      _discoveredPoiIds.add(b.id);
-    }
+    for (var b in sameMuniBics) { _discoveredPoiIds.add(b.id); }
   }
 
   void setFilter(String espacio) {
@@ -165,12 +159,13 @@ class POIProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void selectItinerary(Itinerary it) {
-    _selectedItinerary = it;
-    _selectedEspacio = "Ruta: ${it.matricula}";
-    List<String> itEspacios = it.espacios.split('|').map((e) => e.trim()).toList();
-    _filteredPois = _allPois.where((p) => itEspacios.any((esp) => p.enp.contains(esp))).toList();
-    _filteredBics = _bics.where((b) => it.municipios.contains(b.municipio)).toList();
+  void setHighlightedItinerary(String? id) {
+    _highlightedItineraryId = id;
+    notifyListeners();
+  }
+
+  void toggleAllTrails(bool value) {
+    _showAllTrails = value;
     notifyListeners();
   }
 
@@ -190,10 +185,6 @@ class POIProvider with ChangeNotifier {
     }
   }
 
-  POI? getFirstPoiInEspacio(String espacio) {
-    try { return _allPois.firstWhere((p) => p.enp.contains(espacio)); } catch (e) { return null; }
-  }
-
   void updateLocation(Position position) {
     _currentPosition = position;
     _checkPassiveUnlocking(position);
@@ -201,25 +192,21 @@ class POIProvider with ChangeNotifier {
   }
 
   void _checkPassiveUnlocking(Position pos) {
-    // NUEVA LÓGICA DE ALTA PRECISIÓN: Detección por Polígono Real
-    for (var border in _borders) {
-      if (!_discoveredMunicipios.contains(border.name)) {
-        // Si estamos cerca de cualquier punto del borde, lo desbloqueamos
-        // (En una versión final se usaría Ray-Casting para 'Punto en Polígono')
-        for (var path in border.paths) {
-          for (var p in path) {
-            double d = Geolocator.distanceBetween(pos.latitude, pos.longitude, p.latitude, p.longitude);
-            if (d < 1000) { 
-              _unlockMunicipality(border.name);
-              return;
-            }
+    for (var poi in _allPois) {
+      if (!_discoveredMunicipios.contains(poi.municipio)) {
+        double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, poi.lat, poi.lng);
+        if (dist < 2000) {
+          _unlockMunicipality(poi.municipio);
+          if (!_visits.any((v) => v.poi.municipio == poi.municipio)) {
+             _visits.add(Visit(poi: poi, date: DateTime.now()));
           }
+          return;
         }
       }
     }
   }
 
-  void forceCheckIn(dynamic item) {
+  void forceCheckIn(dynamic item, {String? customPhotoPath}) {
     _points += 100;
     String muni = item is POI ? item.municipio : (item as BIC).municipio;
     _unlockMunicipality(muni);
@@ -228,9 +215,10 @@ class POIProvider with ChangeNotifier {
       poi: item is POI ? item : POI(
         id: item.id, name: item.name, lat: item.lat, lng: item.lng, 
         type: "BIC", saturation: "none", description: item.description, 
-        enp: "", municipio: item.municipio
+        enp: "", municipio: item.municipio, touristPressure: 0
       ), 
-      date: DateTime.now()
+      date: DateTime.now(),
+      photoUrl: customPhotoPath ?? "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"
     ));
     notifyListeners();
   }

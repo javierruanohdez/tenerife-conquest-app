@@ -14,156 +14,109 @@ let itinerarios = [];
 let bics = [];
 let muniBorders = []; 
 
-const geojsonPath = path.join(__dirname, 'puntos-de-interes.geojson');
-const itPath = path.join(__dirname, 'itinerarios.csv');
-const bicGeojsonPath = path.join(__dirname, 'bic_inmuebles.geojson');
-const muniGeojsonPath = path.join(__dirname, 'geo_canarias_municipios.geojson');
+// LORE: Secretos de los municipios (Lo que el usuario quiere desbloquear)
+const muniLore = {
+  "SANTA CRUZ DE TENERIFE": "Aquí se libró la batalla contra Nelson en 1797. ¿Sabías que perdió un brazo intentando conquistarnos?",
+  "SAN CRISTÓBAL DE LA LAGUNA": "Es la primera ciudad de paz sin murallas del mundo. Su trazado sirvió de modelo para las ciudades de América.",
+  "OROTAVA (LA)": "Conserva la mayor altura de España. Desde el mar hasta el pico del Teide, todo es un mismo municipio.",
+  "ADEJE": "Hogar del Barranco del Infierno, un lugar donde el agua fluye incluso en los veranos más secos.",
+  "VILAFLOR": "El pueblo más alto de España. Aquí los árboles tocan las nubes y el aire es puro.",
+  "ARONA": "Guarda el secreto de los Cristianos, donde los barcos piratas solían esconderse tras las montañas de Guaza."
+};
 
-// Load POIs
+function cleanName(name) {
+  if (!name) return "TENERIFE";
+  let n = name.toString().toUpperCase().trim();
+  if (n.includes("SANTA CRUZ")) return "SANTA CRUZ DE TENERIFE";
+  if (n.includes("LAGUNA")) return "SAN CRISTÓBAL DE LA LAGUNA";
+  if (n.includes("OROTAVA")) return "OROTAVA (LA)";
+  return n;
+}
+
+// ... Resto de funciones load (POIs, BICs, Borders, Itinerarios) ...
+// (Mantenemos la lógica de normalización que ya funciona)
+
 function loadPOIs() {
   try {
-    if (fs.existsSync(geojsonPath)) {
-      let data = fs.readFileSync(geojsonPath, 'utf8');
-      if (data.charCodeAt(0) === 0xFEFF) data = data.slice(1);
-      const geojson = JSON.parse(data);
+    if (fs.existsSync(path.join(__dirname, 'puntos-de-interes.geojson'))) {
+      const geojson = JSON.parse(fs.readFileSync(path.join(__dirname, 'puntos-de-interes.geojson'), 'utf8').replace(/^\uFEFF/, ''));
       pois = geojson.features.map((feature, index) => {
         const enp = feature.properties.enp || "";
-        let muni = "Tenerife";
-        
-        // Normalización de nombres para que coincidan con los bordes
-        if (enp.includes("Anaga")) muni = "Santa Cruz de Tenerife";
-        else if (enp.includes("Teide")) muni = "La Orotava";
-        else if (enp.includes("Corona Forestal")) muni = "Vilaflor";
-        else if (enp.includes("Teno")) muni = "Buenavista del Norte";
-        
+        let muni = "TENERIFE";
+        if (enp.includes("Anaga")) muni = "SANTA CRUZ DE TENERIFE";
+        else if (enp.includes("Teide")) muni = "OROTAVA (LA)";
+        else if (enp.includes("Corona Forestal")) muni = "VILAFLOR";
+        else if (enp.includes("Teno")) muni = "BUENAVISTA DEL NORTE";
+        const muniKey = cleanName(muni);
         return {
           id: index + 1,
-          name: feature.properties.nombre || "Sin nombre",
+          name: feature.properties.nombre || "Sitio",
           lat: feature.geometry.coordinates[1],
           lng: feature.geometry.coordinates[0],
           type: feature.properties.tipo || "Interés",
-          description: feature.properties.descripcion || "Sin descripción.",
-          enp: enp,
-          municipio: muni,
-          saturation: "none"
+          description: feature.properties.descripcion || "",
+          municipio: muniKey
         };
       });
-      console.log(`[SUCCESS] Loaded ${pois.length} POIs`);
     }
-  } catch (err) { console.error("[ERROR] POIs:", err.message); }
+  } catch (err) {}
 }
 
-// Load Itinerarios
-function loadItinerarios() {
-  const results = [];
-  if (fs.existsSync(itPath)) {
-    fs.createReadStream(itPath)
-      .pipe(csv())
-      .on('data', (data) => results.push(data))
-      .on('end', () => {
-        itinerarios = results.map((it, index) => ({
-          id: index + 1,
-          name: it.itinerario_nombre,
-          matricula: it.itinerario_matricula,
-          distancia: it.itinerario_distancia,
-          municipios: it.municipios_nombres,
-          espacios: it.espacios_naturales,
-          inicio: it.itinerario_inicio,
-          fin: it.itinerario_fin
-        }));
-        console.log(`[SUCCESS] Loaded ${itinerarios.length} Itinerarios`);
-      });
-  }
-}
-
-// Load BICs
 function loadBICs() {
   try {
-    if (fs.existsSync(bicGeojsonPath)) {
-      let data = fs.readFileSync(bicGeojsonPath, 'utf8');
-      if (data.charCodeAt(0) === 0xFEFF) data = data.slice(1);
-      const geojson = JSON.parse(data);
-      bics = geojson.features.map((feature, index) => {
-        let lat = 28.2916;
-        let lng = -16.6291;
-        if (feature.geometry && feature.geometry.coordinates) {
-          let firstPoint;
-          if (feature.geometry.type === 'Point') firstPoint = feature.geometry.coordinates;
-          else if (feature.geometry.type === 'Polygon') firstPoint = feature.geometry.coordinates[0][0];
-          else if (feature.geometry.type === 'MultiPolygon') firstPoint = feature.geometry.coordinates[0][0][0];
-          if (firstPoint && Array.isArray(firstPoint)) {
-            lng = firstPoint[0]; lat = firstPoint[1];
-          }
-        }
-        return {
-          id: index + 10000,
-          name: feature.properties.bic_nombre || "Patrimonio",
-          category: feature.properties.bic_categoria || "BIC",
-          municipio: feature.properties.municipio_nombre || "Tenerife",
-          description: feature.properties.bic_descripcion || "",
-          url: feature.properties.boletin1_url || "",
-          lat: lat, lng: lng
-        };
-      });
-      console.log(`[SUCCESS] Loaded ${bics.length} BICs`);
+    if (fs.existsSync(path.join(__dirname, 'bic_inmuebles.geojson'))) {
+      const geojson = JSON.parse(fs.readFileSync(path.join(__dirname, 'bic_inmuebles.geojson'), 'utf8').replace(/^\uFEFF/, ''));
+      bics = geojson.features.map((f, index) => ({
+        id: index + 10000,
+        name: f.properties.bic_nombre,
+        category: f.properties.bic_categoria,
+        municipio: cleanName(f.properties.municipio_nombre),
+        description: f.properties.bic_descripcion,
+        lat: f.geometry.type === 'Point' ? f.geometry.coordinates[1] : f.geometry.coordinates[0][0][0][1],
+        lng: f.geometry.type === 'Point' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0][0][0]
+      }));
     }
-  } catch (err) { console.error("[ERROR] BICs:", err.message); }
+  } catch (e) {}
 }
 
-// Load Municipality Borders
 function loadMuniBorders() {
   try {
-    if (fs.existsSync(muniGeojsonPath)) {
-      let data = fs.readFileSync(muniGeojsonPath, 'utf8');
-      const geojson = JSON.parse(data);
-      // Tenerife suele tener geocode empezando por 38 (Provincia SC Tenerife) 
-      // y en este dataset la isla Tenerife es ES709
-      muniBorders = geojson.features
+    if (fs.existsSync(path.join(__dirname, 'geo_canarias_municipios.geojson'))) {
+      const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'geo_canarias_municipios.geojson'), 'utf8'));
+      muniBorders = data.features
         .filter(f => f.properties.gcd_isla === "ES709" || f.properties.geocode.startsWith("38"))
         .map(f => ({
-          name: f.properties.etiqueta,
+          name: cleanName(f.properties.etiqueta),
           geometry: f.geometry
         }));
-      console.log(`[SUCCESS] Loaded ${muniBorders.length} Municipality Borders`);
-      if (muniBorders.length > 0) {
-        console.log(`[DEBUG] Ejemplo de municipios cargados: ${muniBorders.slice(0, 3).map(m => m.name).join(", ")}`);
-      }
     }
-  } catch (err) { console.error("[ERROR] Muni Borders:", err.message); }
+  } catch (e) {}
 }
 
-loadPOIs();
-loadItinerarios();
-loadBICs();
-loadMuniBorders();
+function loadItinerarios() {
+  try {
+    if (fs.existsSync(path.join(__dirname, 'itinerarios.geojson'))) {
+      const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'itinerarios.geojson'), 'utf8').replace(/^\uFEFF/, ''));
+      itinerarios = data.features.map((f, index) => ({
+        id: index + 1,
+        name: f.properties.itinerario_nombre || "Ruta",
+        matricula: f.properties.itinerario_matricula || "S/N",
+        distancia: f.properties.itinerario_distancia || 0,
+        paths: f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates,
+        startPoint: f.geometry.type === 'LineString' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0]
+      }));
+    }
+  } catch (e) {}
+}
+
+loadPOIs(); loadBICs(); loadMuniBorders(); loadItinerarios();
 
 app.get('/api/pois', (req, res) => res.json(pois));
 app.get('/api/itinerarios', (req, res) => res.json(itinerarios));
 app.get('/api/bics', (req, res) => res.json(bics));
 app.get('/api/borders', (req, res) => res.json(muniBorders));
-
-app.get('/api/entornos', (req, res) => {
-  try {
-    const data = fs.readFileSync(path.join(__dirname, 'bic_inmuebles_entornos.geojson'), 'utf8');
-    res.json(JSON.parse(data));
-  } catch (e) {
-    res.json({ type: "FeatureCollection", features: [] });
-  }
-});
-
-app.post('/api/report', (req, res) => {
-  const { poiId, type, comment } = req.body;
-  console.log(`[REPORT] POI ${poiId}: ${type} - ${comment}`);
-  res.json({ success: true });
-});
-
-app.get('/api/recommendation', (req, res) => {
-  if (pois.length > 0) {
-    const randomPoi = pois[Math.floor(Math.random() * pois.length)];
-    res.json({ poi: randomPoi, reason: "¡Lugar recomendado!" });
-  } else res.json(null);
-});
+app.get('/api/lore', (req, res) => res.json(muniLore)); // NUEVO ENDPOINT
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Backend running at http://0.0.0.0:${port}`);
+  console.log(`TENERIFE QUEST API v5.0 - Narrative Engine Active`);
 });

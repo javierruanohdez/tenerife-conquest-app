@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/poi_provider.dart';
-import '../main_container.dart';
+import 'onboarding_screen.dart'; // IMPORTAR ONBOARDING
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainContainer()),
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
     }
   }
@@ -61,13 +61,38 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 50),
             const CircularProgressIndicator(color: Colors.white),
             const SizedBox(height: 20),
-            const Text(
-              "Cargando datos de la isla...",
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                        const Text(
+                          "Cargando datos de la isla...",
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        ),
+                        const Spacer(),
+                        // BARRA INSTITUCIONAL
+                        Padding(
+                          padding: const EdgeInsets.all(30.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.network(
+                                "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Flag_of_Europe.svg/255px-Flag_of_Europe.svg.png",
+                                height: 40,
+                              ),
+                              const SizedBox(width: 20),
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Fondo Europeo de", style: TextStyle(color: Colors.white, fontSize: 10)),
+                                  Text("Desarrollo Regional", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              const SizedBox(width: 30),
+                              const Icon(Icons.account_balance, color: Colors.white, size: 30), // Placeholder Cabildo
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+            }
+            

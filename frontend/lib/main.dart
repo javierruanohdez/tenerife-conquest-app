@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/poi_provider.dart';
-import 'screens/splash_screen.dart';
+import 'screens/splash_screen.dart'; // VOLVEMOS AL SPLASH
 
 void main() {
   runApp(
@@ -24,9 +24,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32), // Verde bosque
+          seedColor: const Color(0xFF2E7D32),
           primary: const Color(0xFF2E7D32),
-          secondary: const Color(0xFFFFA000), // Ámbar para BIC
+          secondary: const Color(0xFFFFA000),
           surface: Colors.white,
         ),
         cardTheme: CardThemeData(
@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const SplashScreen(),
+      home: const SplashScreen(), // VOLVEMOS AL SPLASH
       debugShowCheckedModeBanner: false,
     );
   }

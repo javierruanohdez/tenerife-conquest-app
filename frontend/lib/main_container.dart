@@ -71,10 +71,10 @@ class _MainContainerState extends State<MainContainer> {
   }
 
   int _getAdjustedIndex() {
-    if (_currentIndex == 0) return 0;
-    if (_currentIndex == 1) return 1;
-    if (_currentIndex == 3) return 2;
-    if (_currentIndex == 4) return 3;
+    if (_currentIndex == 0) return 0; // Mapa
+    if (_currentIndex == 1) return 1; // Grupos (Ranking)
+    if (_currentIndex == 3) return 2; // Conquista
+    if (_currentIndex == 4) return 3; // Usuario
     return 0;
   }
 
@@ -82,19 +82,9 @@ class _MainContainerState extends State<MainContainer> {
     final ImagePicker picker = ImagePicker();
     try {
       final XFile? photo = await picker.pickImage(source: ImageSource.camera);
-
       if (photo != null && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CapturePreviewScreen(imagePath: photo.path),
-          ),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => CapturePreviewScreen(imagePath: photo.path)));
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al abrir cámara: $e")),
-      );
-    }
+    } catch (e) {}
   }
 }

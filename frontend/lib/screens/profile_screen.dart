@@ -19,13 +19,75 @@ class ProfileScreen extends StatelessWidget {
             _buildHeader(provider),
             const SizedBox(height: 20),
             _buildStatsRow(provider),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
+            _buildMedalsRow(provider),
+            const SizedBox(height: 20),
             _buildGlobalRankCard(provider),
+            const SizedBox(height: 20),
+            _buildUnlockedSecrets(provider),
             const SizedBox(height: 20),
             if (visits.isNotEmpty) _buildDataDashboard(provider),
             _buildMenu(context),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMedalsRow(POIProvider provider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("MEDALLAS DE REGIÓN", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _medalIcon("Norte", provider.discoveredMunicipios.length > 10, Icons.terrain, Colors.blue),
+              _medalIcon("Sur", provider.discoveredMunicipios.length > 5, Icons.wb_sunny, Colors.orange),
+              _medalIcon("Capital", provider.discoveredMunicipios.contains("SANTA CRUZ DE TENERIFE"), Icons.location_city, Colors.purple),
+              _medalIcon("Leyenda", provider.discoveredMunicipios.length == 31, Icons.auto_awesome, Colors.amber),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _medalIcon(String label, bool active, IconData icon, Color color) {
+    return Column(
+      children: [
+        CircleAvatar(
+          backgroundColor: active ? color.withOpacity(0.2) : Colors.grey[200],
+          child: Icon(icon, color: active ? color : Colors.grey[400]),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 10, color: active ? Colors.black87 : Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildUnlockedSecrets(POIProvider provider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("DIARIO DE SECRETOS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+          const SizedBox(height: 12),
+          if (provider.discoveredMunicipios.isEmpty)
+            const Text("Explora municipios para desbloquear sus secretos...", style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
+          ...provider.discoveredMunicipios.take(3).map((muni) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: const Icon(Icons.auto_stories, color: Colors.green),
+              title: Text(muni, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Secreto desbloqueado. ¡Luz recuperada!", style: TextStyle(fontSize: 12)),
+            ),
+          )),
+        ],
       ),
     );
   }
@@ -172,6 +234,29 @@ class ProfileScreen extends StatelessWidget {
             _showAboutDialog(context);
           },
         ),
+        const SizedBox(height: 40),
+        _buildInstitutionalFooter(),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildInstitutionalFooter() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.network(
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Flag_of_Europe.svg/255px-Flag_of_Europe.svg.png",
+              height: 30,
+            ),
+            const SizedBox(width: 15),
+            const Text("UNIÓN EUROPEA", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        const Text("Proyecto cofinanciado por el Fondo FEDER", style: TextStyle(fontSize: 10, color: Colors.grey)),
       ],
     );
   }

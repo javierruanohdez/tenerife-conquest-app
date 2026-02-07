@@ -8,6 +8,7 @@ class POI {
   final String description;
   final String enp;
   final String municipio;
+  final int touristPressure;
 
   POI({
     required this.id,
@@ -18,7 +19,8 @@ class POI {
     required this.saturation,
     required this.description,
     required this.enp,
-    this.municipio = "Tenerife",
+    required this.municipio,
+    this.touristPressure = 0,
   });
 
   factory POI.fromJson(Map<String, dynamic> json) {
@@ -31,7 +33,8 @@ class POI {
       saturation: json['saturation'] ?? "none",
       description: json['description'] ?? "",
       enp: json['enp'] ?? "",
-      municipio: json['municipio'] ?? "Tenerife",
+      municipio: json['municipio'] ?? "TENERIFE",
+      touristPressure: json['touristPressure'] ?? 0,
     );
   }
 }
