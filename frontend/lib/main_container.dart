@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'screens/map_screen.dart';
 import 'screens/conquest_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/ranking_screen.dart';
+import 'screens/capture_preview_screen.dart';
 
 class MainContainer extends StatefulWidget {
   const MainContainer({super.key});
@@ -76,9 +78,23 @@ class _MainContainerState extends State<MainContainer> {
     return 0;
   }
 
-  void _showCameraAction(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Abriendo cámara para Captura Tenerife...")),
-    );
+  void _showCameraAction(BuildContext context) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? photo = await picker.pickImage(source: ImageSource.camera);
+
+      if (photo != null && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CapturePreviewScreen(imagePath: photo.path),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al abrir cámara: $e")),
+      );
+    }
   }
 }

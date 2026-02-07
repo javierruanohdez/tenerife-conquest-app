@@ -3,11 +3,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:math' as math;
 import '../providers/poi_provider.dart';
 import '../models/poi.dart';
 import '../models/bic.dart';
-import '../models/itinerary.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -42,29 +40,22 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  void _moveTo(double lat, double lng) {
-    _mapController.move(LatLng(lat, lng), 14.0);
-  }
-
   @override
   Widget build(BuildContext context) {
     final poiProvider = Provider.of<POIProvider>(context);
     
+    // CAPA DE NIEBLA: Polígonos de municipios conquistados
     List<List<LatLng>> holes = [];
-    for (var border in poiProvider.borders) {
-      if (border.isNotEmpty) {
-        bool isDiscovered = false;
-        for (var poi in poiProvider.allPois) {
-          if (poiProvider.discoveredMunicipios.contains(poi.municipio)) {
-             double d = Geolocator.distanceBetween(border[0].latitude, border[0].longitude, poi.lat, poi.lng);
-             if (d < 5000) { 
-               isDiscovered = true;
-               break;
-             }
+    try {
+      for (var border in poiProvider.borders) {
+        if (poiProvider.discoveredMunicipios.contains(border.name)) {
+          for (var path in border.paths) {
+            if (path.isNotEmpty) holes.add(path);
           }
         }
-        if (isDiscovered) holes.add(border);
       }
+    } catch (e) {
+      print("[MAP ERROR] Error calculando huecos de niebla: $e");
     }
 
     return Scaffold(
@@ -97,25 +88,20 @@ class _MapScreenState extends State<MapScreen> {
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.example.tnf_datos_app',
               ),
+              // LA NUEVA CAPA DE NIEBLA (SOLO EN TIERRA FIRME)
               if (_showFog)
                 PolygonLayer(
-                  polygons: [
-                    Polygon(
-                      points: [
-                        const LatLng(30.0, -18.0),
-                        const LatLng(30.0, -15.0),
-                        const LatLng(27.0, -15.0),
-                        const LatLng(27.0, -18.0),
-                      ],
-                      holePointsList: holes,
+                  polygons: poiProvider.borders.where((muni) => !poiProvider.discoveredMunicipios.contains(muni.name)).expand((muni) {
+                    return muni.paths.map((path) => Polygon(
+                      points: path,
                       color: const Color(0xFF001529).withOpacity(0.85),
                       borderStrokeWidth: 0,
-                    ),
-                  ],
+                    ));
+                  }).toList(),
                 ),
               PolylineLayer(
-                polylines: poiProvider.borders.map((border) => Polyline(
-                  points: border,
+                polylines: poiProvider.borders.expand((b) => b.paths).map((path) => Polyline(
+                  points: path,
                   color: Colors.white.withOpacity(0.3),
                   strokeWidth: 1.5,
                 )).toList(),
@@ -126,26 +112,18 @@ class _MapScreenState extends State<MapScreen> {
                     ...poiProvider.pois.map((poi) => Marker(
                       point: LatLng(poi.lat, poi.lng),
                       width: 45, height: 45,
-                      child: Semantics(
-                        label: "Punto: ${poi.name}",
-                        button: true,
-                        child: GestureDetector(
-                          onTap: () => _showPOISheet(poi, poiProvider),
-                          child: _buildMarkerIcon(Icons.nature_people, Colors.green[700]!),
-                        ),
+                      child: GestureDetector(
+                        onTap: () => _showPOISheet(poi, poiProvider),
+                        child: _buildMarkerIcon(Icons.nature_people, Colors.green[700]!),
                       ),
                     )),
                   if (_showBICs)
                     ...poiProvider.bics.map((bic) => Marker(
                       point: LatLng(bic.lat, bic.lng),
                       width: 45, height: 45,
-                      child: Semantics(
-                        label: "BIC: ${bic.name}",
-                        button: true,
-                        child: GestureDetector(
-                          onTap: () => _showBICSheet(bic),
-                          child: _buildMarkerIcon(Icons.account_balance, Colors.amber[800]!),
-                        ),
+                      child: GestureDetector(
+                        onTap: () => _showBICSheet(bic),
+                        child: _buildMarkerIcon(Icons.account_balance, Colors.amber[800]!),
                       ),
                     )),
                   if (poiProvider.currentPosition != null)
@@ -332,7 +310,7 @@ class _MapScreenState extends State<MapScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(child: Text(poi.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
-                  Text("TENERIFE", style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold)),
+                  Text(poi.municipio.toUpperCase(), style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 10),
@@ -419,7 +397,7 @@ class _MapScreenState extends State<MapScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(color: Colors.amber[100], borderRadius: BorderRadius.circular(20)),
-                    child: Text("BIC", style: TextStyle(color: Colors.amber[900], fontWeight: FontWeight.bold)),
+                    child: const Text("BIC", style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

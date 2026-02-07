@@ -23,13 +23,19 @@ class Explorer {
   Explorer({required this.name, required this.conquests, this.isMe = false});
 }
 
+class MuniBorder {
+  final String name;
+  final List<List<LatLng>> paths;
+  MuniBorder({required this.name, required this.paths});
+}
+
 class POIProvider with ChangeNotifier {
   List<POI> _allPois = [];
   List<POI> _filteredPois = [];
   List<Itinerary> _itineraries = [];
   List<BIC> _bics = [];
   List<BIC> _filteredBics = [];
-  List<List<LatLng>> _borders = [];
+  List<MuniBorder> _borders = [];
   Set<int> _discoveredPoiIds = {};
   Set<String> _discoveredMunicipios = {}; 
   List<Visit> _visits = [];
@@ -66,7 +72,7 @@ class POIProvider with ChangeNotifier {
   List<POI> get allPois => _allPois;
   List<Itinerary> get itineraries => _itineraries;
   List<BIC> get bics => _filteredBics;
-  List<List<LatLng>> get borders => _borders;
+  List<MuniBorder> get borders => _borders;
   Set<int> get discoveredPoiIds => _discoveredPoiIds;
   Set<String> get discoveredMunicipios => _discoveredMunicipios;
   List<Visit> get visits => _visits;
@@ -94,26 +100,44 @@ class POIProvider with ChangeNotifier {
   }
 
   Future<void> loadData() async {
-    _allPois = await _apiService.fetchPOIs();
-    _itineraries = await _apiService.fetchItineraries();
-    _bics = await _apiService.fetchBICs();
-    _recommendation = await _apiService.fetchRecommendation();
-    
-    final rawBorders = await _apiService.fetchBordersRaw();
-    _borders = rawBorders.map((path) {
-      return (path as List).map((point) {
-        return LatLng((point as List)[0], (point as List)[1]);
+    print("[DEBUG] Iniciando carga de datos...");
+    try {
+      _allPois = await _apiService.fetchPOIs();
+      print("[DEBUG] POIs cargados: ${_allPois.length}");
+      
+      _itineraries = await _apiService.fetchItineraries();
+      _bics = await _apiService.fetchBICs();
+      _recommendation = await _apiService.fetchRecommendation();
+      
+      print("[DEBUG] Cargando bordes municipales...");
+      final rawBorders = await _apiService.fetchBordersRaw();
+      _borders = rawBorders.map((b) {
+        final name = b['name'] as String;
+        final geom = b['geometry']['coordinates'] as List;
+        List<List<LatLng>> paths = [];
+        if (b['geometry']['type'] == 'Polygon') {
+          paths.add((geom[0] as List).map((p) => LatLng(p[1], p[0])).toList());
+        } else {
+          for (var poly in geom) {
+            paths.add((poly[0] as List).map((p) => LatLng(p[1], p[0])).toList());
+          }
+        }
+        return MuniBorder(name: name, paths: paths);
       }).toList();
-    }).toList();
+      print("[DEBUG] Bordes procesados: ${_borders.length}");
 
-    _filterPois();
-    _filterBics();
+      _filterPois();
+      _filterBics();
 
-    if (_allPois.isNotEmpty) {
-      _unlockMunicipality(_allPois[0].municipio);
+      if (_allPois.isNotEmpty) {
+        _unlockMunicipality(_allPois[0].municipio);
+      }
+    } catch (e) {
+      print("[ERROR] Fallo en loadData: $e");
+    } finally {
+      print("[DEBUG] Finalizando carga.");
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
   void _unlockMunicipality(String muni) {
@@ -144,16 +168,9 @@ class POIProvider with ChangeNotifier {
   void selectItinerary(Itinerary it) {
     _selectedItinerary = it;
     _selectedEspacio = "Ruta: ${it.matricula}";
-    
     List<String> itEspacios = it.espacios.split('|').map((e) => e.trim()).toList();
-    _filteredPois = _allPois.where((p) => 
-      itEspacios.any((esp) => p.enp.contains(esp))
-    ).toList();
-
-    _filteredBics = _bics.where((b) => 
-      it.municipios.contains(b.municipio)
-    ).toList();
-    
+    _filteredPois = _allPois.where((p) => itEspacios.any((esp) => p.enp.contains(esp))).toList();
+    _filteredBics = _bics.where((b) => it.municipios.contains(b.municipio)).toList();
     notifyListeners();
   }
 
@@ -174,11 +191,7 @@ class POIProvider with ChangeNotifier {
   }
 
   POI? getFirstPoiInEspacio(String espacio) {
-    try {
-      return _allPois.firstWhere((p) => p.enp.contains(espacio));
-    } catch (e) {
-      return null;
-    }
+    try { return _allPois.firstWhere((p) => p.enp.contains(espacio)); } catch (e) { return null; }
   }
 
   void updateLocation(Position position) {
@@ -188,15 +201,18 @@ class POIProvider with ChangeNotifier {
   }
 
   void _checkPassiveUnlocking(Position pos) {
-    for (var poi in _allPois) {
-      if (!_discoveredMunicipios.contains(poi.municipio)) {
-        double dist = Geolocator.distanceBetween(
-          pos.latitude, pos.longitude, poi.lat, poi.lng
-        );
-        if (dist < 2000) {
-          _unlockMunicipality(poi.municipio);
-          if (!_visits.any((v) => v.poi.municipio == poi.municipio)) {
-             _visits.add(Visit(poi: poi, date: DateTime.now()));
+    // NUEVA LÓGICA DE ALTA PRECISIÓN: Detección por Polígono Real
+    for (var border in _borders) {
+      if (!_discoveredMunicipios.contains(border.name)) {
+        // Si estamos cerca de cualquier punto del borde, lo desbloqueamos
+        // (En una versión final se usaría Ray-Casting para 'Punto en Polígono')
+        for (var path in border.paths) {
+          for (var p in path) {
+            double d = Geolocator.distanceBetween(pos.latitude, pos.longitude, p.latitude, p.longitude);
+            if (d < 1000) { 
+              _unlockMunicipality(border.name);
+              return;
+            }
           }
         }
       }
@@ -207,9 +223,7 @@ class POIProvider with ChangeNotifier {
     _points += 100;
     String muni = item is POI ? item.municipio : (item as BIC).municipio;
     _unlockMunicipality(muni);
-
     try { Vibration.vibrate(pattern: [0, 100, 50, 100]); } catch (e) {}
-
     _visits.add(Visit(
       poi: item is POI ? item : POI(
         id: item.id, name: item.name, lat: item.lat, lng: item.lng, 
@@ -224,9 +238,7 @@ class POIProvider with ChangeNotifier {
   void checkIn(dynamic item) {
     if (_currentPosition == null) return;
     double distance = Geolocator.distanceBetween(_currentPosition!.latitude, _currentPosition!.longitude, item.lat, item.lng);
-    if (distance <= 500) {
-      forceCheckIn(item);
-    }
+    if (distance <= 500) forceCheckIn(item);
   }
 
   POI? get nearestPoi {
@@ -242,10 +254,7 @@ class POIProvider with ChangeNotifier {
 
   Future<bool> sendReport(int poiId, String type, String comment) async {
     bool success = await _apiService.sendReport(poiId, type, comment);
-    if (success) {
-      _points += 50;
-      notifyListeners();
-    }
+    if (success) { _points += 50; notifyListeners(); }
     return success;
   }
 }
