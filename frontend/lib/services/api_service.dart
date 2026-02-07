@@ -8,16 +8,12 @@ import '../models/bic.dart';
 
 class ApiService {
   String get baseUrl {
-    // Tu IP local detectada para pruebas en red Wi-Fi
+    // Tu IP local detectada para que el móvil real vea al PC
     const String localIp = "192.168.1.145";
+    const String port = "3000";
 
-    if (kIsWeb) {
-      return "http://$localIp:3000/api";
-    } else if (Platform.isAndroid) {
-      return "http://10.0.2.2:3000/api";
-    } else {
-      return "http://$localIp:3000/api";
-    }
+    // Para desarrollo, usamos la misma IP en Web, Android e iOS
+    return "http://$localIp:$port/api";
   }
 
   Future<List<POI>> fetchPOIs() async {
