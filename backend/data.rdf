@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+  xmlns:spdx="http://spdx.org/rdf/terms#"
+  xmlns:dct="http://purl.org/dc/terms/"
+  xmlns:dcat="http://www.w3.org/ns/dcat#"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
+>
+  <dcat:Dataset rdf:about="https://datos.tenerife.es/dataset/8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3">
+    <dct:title>Puntos de interés de la isla de Tenerife</dct:title>
+    <dct:description>Datos sobre puntos de interés asociados a senderos de la isla de Tenerife </dct:description>
+    <dcat:landingPage>
+      <foaf:Document rdf:about="https://www.tenerifeon.es/"/>
+    </dcat:landingPage>
+    <dct:identifier>8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3</dct:identifier>
+    <dct:accrualPeriodicity>P1M</dct:accrualPeriodicity>
+    <dcat:keyword>hidrografía</dcat:keyword>
+    <dcat:keyword>museos</dcat:keyword>
+    <dcat:keyword>naturaleza</dcat:keyword>
+    <dcat:keyword>patrimonio histórico</dcat:keyword>
+    <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2025-07-17T06:48:02.635456</dct:issued>
+    <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2026-01-02T12:22:30.659722</dct:modified>
+    <dct:language>es</dct:language>
+    <dcat:contactPoint>
+      <vcard:Organization rdf:nodeID="Nefd398205b4d4c259778f1a2c3cf563a">
+        <vcard:fn>Servicio Técnico de Planificación y Proyectos Forestales. Unidad Orgánica de Uso Público y Recursos Informáticos</vcard:fn>
+      </vcard:Organization>
+    </dcat:contactPoint>
+    <dct:publisher>
+      <foaf:Agent rdf:about="https://datos.tenerife.es/organization/1c788598-6d73-4a41-8d71-1c72645f4c53">
+        <foaf:name>Cabildo de Tenerife</foaf:name>
+      </foaf:Agent>
+    </dct:publisher>
+    <dcat:distribution>
+      <dcat:Distribution rdf:about="https://datos.tenerife.es/dataset/8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3/resource/b9136133-f82f-4071-a076-18d7f5782f84">
+        <dct:title>Puntos de interés</dct:title>
+        <dct:description>Datos sobre puntos de interés asociados a senderos de la isla de Tenerife</dct:description>
+        <dcat:mediaType>application/geo+json</dcat:mediaType>
+        <dct:format>GeoJSON</dct:format>
+        <dcat:accessURL rdf:resource="https://datos.tenerife.es/ckan/dataset/8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3/resource/b9136133-f82f-4071-a076-18d7f5782f84/download/puntos-de-interes.geojson"/>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2025-07-17T06:48:41.141063</dct:issued>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2026-01-02T12:22:30.666432</dct:modified>
+        <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">122125</dcat:byteSize>
+      </dcat:Distribution>
+    </dcat:distribution>
+    <dcat:distribution>
+      <dcat:Distribution rdf:about="https://datos.tenerife.es/dataset/8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3/resource/ab53a175-35bb-4c99-9239-e8d4b1ff0d21">
+        <dct:title>Puntos de interés</dct:title>
+        <dct:description>Datos sobre puntos de interés asociados a senderos de la isla de Tenerife</dct:description>
+        <dcat:mediaType>text/csv</dcat:mediaType>
+        <dct:format>CSV</dct:format>
+        <dcat:accessURL rdf:resource="https://datos.tenerife.es/ckan/dataset/8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3/resource/ab53a175-35bb-4c99-9239-e8d4b1ff0d21/download/puntos-de-interes.csv"/>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2025-07-17T06:48:20.857528</dct:issued>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2026-01-02T12:22:20.752448</dct:modified>
+        <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">68264</dcat:byteSize>
+        <spdx:checksum>
+          <spdx:Checksum rdf:nodeID="N03c11c62ffee4f79aeb40022bd0ae8b6">
+            <spdx:checksumValue rdf:datatype="http://www.w3.org/2001/XMLSchema#hexBinary">bd0e318abafb4213853464f55f287484</spdx:checksumValue>
+          </spdx:Checksum>
+        </spdx:checksum>
+      </dcat:Distribution>
+    </dcat:distribution>
+    <dcat:distribution>
+      <dcat:Distribution rdf:about="https://datos.tenerife.es/dataset/8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3/resource/453fba06-49fe-4077-b5cb-07537d637912">
+        <dct:title>Diccionario de datos de puntos de interés</dct:title>
+        <dct:description>Diccionario de datos</dct:description>
+        <dcat:mediaType>application/json</dcat:mediaType>
+        <dct:format>JSON</dct:format>
+        <dcat:accessURL rdf:resource="https://datos.tenerife.es/ckan/dataset/8c56a7ab-2ff9-44f9-986f-6f3a18dc7ac3/resource/453fba06-49fe-4077-b5cb-07537d637912/download/diccionario-de-datos-de-puntos-de-interes.json"/>
+        <dct:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2025-07-17T06:48:10.889022</dct:issued>
+        <dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2026-01-02T12:22:20.107160</dct:modified>
+        <dcat:byteSize rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1690</dcat:byteSize>
+      </dcat:Distribution>
+    </dcat:distribution>
+  </dcat:Dataset>
+</rdf:RDF>
