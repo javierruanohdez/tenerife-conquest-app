@@ -8,11 +8,9 @@ import '../models/bic.dart';
 
 class ApiService {
   String get baseUrl {
-    // Tu IP local detectada para que el móvil real vea al PC
-    const String localIp = "192.168.1.145";
+    // Si estamos en Web, usamos localhost. Si no, la IP de red.
+    const String localIp = kIsWeb ? "127.0.0.1" : "192.168.1.145";
     const String port = "3000";
-
-    // Para desarrollo, usamos la misma IP en Web, Android e iOS
     return "http://$localIp:$port/api";
   }
 

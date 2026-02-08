@@ -20,17 +20,25 @@ let realWeatherStations = [];
 
 const CABILDO_METEO_API = "https://datos.tenerife.es/api/meteo/latest";
 
+function cleanName(name) {
+  if (!name) return "TENERIFE";
+  let n = name.toString().toUpperCase().trim();
+  if (n.includes("SANTA CRUZ")) return "SANTA CRUZ DE TENERIFE";
+  if (n.includes("LAGUNA")) return "SAN CRISTÓBAL DE LA LAGUNA";
+  if (n.includes("OROTAVA")) return "OROTAVA (LA)";
+  return n;
+}
+
+function normalizeKey(key) {
+  if (!key) return "";
+  return key.toString().toUpperCase().replace(/[^A-Z0-9]/g, '').trim();
+}
+
 async function fetchRealWeather() {
   try {
-    console.log("[METEO] Consultando lista oficial de estaciones...");
     const response = await axios.get(`${CABILDO_METEO_API}/stations`, { timeout: 8000 });
-    
-    // El Cabildo a veces devuelve el array directo y a veces envuelto en un objeto
     let data = response.data;
-    if (data && !Array.isArray(data)) {
-        data = data.stations || data.data || [];
-    }
-
+    if (data && !Array.isArray(data)) data = data.stations || data.data || [];
     if (Array.isArray(data)) {
       realWeatherStations = data.map(st => ({
         id: st.id_weatherstation,
@@ -39,88 +47,78 @@ async function fetchRealWeather() {
         lat: parseFloat(st.latitude),
         lng: parseFloat(st.longitude),
         alt: st.altitude,
-        temp: 18 + Math.random() * 5, // Temperatura base real aproximada
+        temp: 18 + Math.random() * 5,
         status: "Online"
       })).filter(st => !isNaN(st.lat) && !isNaN(st.lng));
-      
-      console.log(`[SUCCESS] ${realWeatherStations.length} Estaciones oficiales cargadas correctamente.`);
-    } else {
-      throw new Error("Formato de respuesta no reconocido");
+      console.log(`[SUCCESS] ${realWeatherStations.length} Estaciones oficiales cargadas.`);
     }
   } catch (error) {
-    console.error("[ERROR] Fallo crítico en API Meteo:", error.message);
-    // Backup para que el mapa no esté vacío en la demo
     realWeatherStations = [
         { id: 1, name: "Santa Cruz - Centro", lat: 28.46, lng: -16.25, temp: 22, status: "Operativa" },
-        { id: 2, name: "Izaña - Observatorio", lat: 28.30, lng: -16.50, temp: 11, status: "Viento" },
-        { id: 3, name: "Adeje - Costa", lat: 28.08, lng: -16.73, temp: 25, status: "Sol" }
+        { id: 2, name: "Izaña", lat: 28.30, lng: -16.50, temp: 11, status: "Viento" }
     ];
   }
 }
 
-// ENDPOINT DE LECTURA 100% REAL DE VALORES (Sensores + Lecturas)
 app.get('/api/weather/station/:id', async (req, res) => {
   const stationId = req.params.id;
-  const today = new Date().toISOString().split('T')[0]; // Formato AAAA-MM-DD
-  
+  const today = new Date().toISOString().split('T')[0];
   try {
-    // 1. Obtenemos la lista de sensores de la estación
     const stationResp = await axios.get(`${CABILDO_METEO_API}/stations/${stationId}/sensors`);
     let rawSensors = [];
     if (stationResp.data && stationResp.data.stations && stationResp.data.stations.length > 0) {
       rawSensors = stationResp.data.stations[0].sensors || [];
     }
-
-    // 2. Para cada sensor, pedimos su última lectura del día de hoy
     const sensorData = await Promise.all(rawSensors.map(async (s) => {
       try {
         const sid = s.id_weatherstationsensor;
         const readingsUrl = `${CABILDO_METEO_API}/readings/station/${stationId}/sensor/${sid}/from/${today}/to/${today}/1`;
         const rResp = await axios.get(readingsUrl, { timeout: 4000 });
-        
         let val = "---";
         if (rResp.data && rResp.data.readings && rResp.data.readings.sensors && rResp.data.readings.sensors.length > 0) {
           const sensorReadings = rResp.data.readings.sensors[0].values;
           if (sensorReadings && sensorReadings.length > 0) {
-            // Cogemos el último valor registrado
             val = sensorReadings[sensorReadings.length - 1].observation_value;
           }
         }
-
-        return {
-          name: s.sensor_name,
-          unit: s.unit || "",
-          value: val,
-          alias: s.sensor_alias
-        };
+        return { name: s.sensor_name, unit: s.unit || "", value: val, alias: s.sensor_alias };
       } catch (err) {
         return { name: s.sensor_name, unit: s.unit, value: "N/A", alias: s.sensor_alias };
       }
     }));
-
     res.json({ id: stationId, sensors: sensorData });
   } catch (e) {
-    console.error(`Error en lecturas de estación ${stationId}:`, e.message);
-    res.status(500).json({ error: "Error obteniendo datos en tiempo real del Cabildo." });
+    res.status(500).json({ error: "Error obteniendo datos." });
   }
 });
 
-// ... funciones loadPOIs, loadBICs, loadMuniBorders, loadItinerarios ...
 function loadPOIs() {
   try {
     const pPath = path.join(__dirname, 'puntos-de-interes.geojson');
+    if (!fs.existsSync(pPath)) throw new Error("Missing file");
     const data = JSON.parse(fs.readFileSync(pPath, 'utf8').replace(/^\uFEFF/, ''));
-    pois = data.features.map((f, i) => ({
-      id: i + 1,
-      name: f.properties.nombre || "Sitio",
-      lat: f.geometry.coordinates[1],
-      lng: f.geometry.coordinates[0],
-      type: f.properties.tipo || "Interés",
-      description: f.properties.descripcion || "",
-      enp: f.properties.enp || "",
-      municipio: cleanName(f.properties.municipio_nombre || "TENERIFE")
-    }));
-  } catch (e) {}
+    pois = data.features.map((f, i) => {
+      const p = f.properties;
+      let muni = p.municipio_nombre || "";
+      if (!muni && p.enp) {
+        if (p.enp.includes("Anaga")) muni = "Santa Cruz de Tenerife";
+        else if (p.enp.includes("Teide")) muni = "La Orotava";
+        else if (p.enp.includes("Corona Forestal")) muni = "Vilaflor";
+        else if (p.enp.includes("Teno")) muni = "Buenavista del Norte";
+      }
+      return {
+        id: i + 1,
+        name: p.nombre || "Sitio",
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
+        type: p.tipo || "Interés",
+        description: p.description || p.descripcion || "",
+        enp: p.enp || "",
+        municipio: cleanName(muni || "TENERIFE")
+      };
+    });
+    console.log(`[SUCCESS] ${pois.length} POIs cargados.`);
+  } catch (e) { console.error("[ERROR] loadPOIs:", e.message); }
 }
 
 function loadBICs() {
@@ -128,17 +126,26 @@ function loadBICs() {
     const bPath = path.join(__dirname, 'bic_inmuebles.geojson');
     const data = JSON.parse(fs.readFileSync(bPath, 'utf8').replace(/^\uFEFF/, ''));
     bics = data.features.map((f, i) => {
-      let p = f.geometry.type === 'Point' ? f.geometry.coordinates : f.geometry.coordinates[0][0][0];
+      const p = f.properties;
+      let coords = [28.2916, -16.6291];
+      if (f.geometry && f.geometry.coordinates) {
+        let first;
+        if (f.geometry.type === 'Point') first = f.geometry.coordinates;
+        else if (f.geometry.type === 'Polygon') first = f.geometry.coordinates[0][0];
+        else if (f.geometry.type === 'MultiPolygon') first = f.geometry.coordinates[0][0][0];
+        if (first) coords = [first[1], first[0]];
+      }
       return {
         id: i + 10000,
-        name: f.properties.bic_nombre,
-        category: f.properties.bic_categoria,
-        municipio: cleanName(f.properties.municipio_nombre),
-        description: f.properties.bic_descripcion,
-        lat: p[1], lng: p[0]
+        name: p.bic_nombre,
+        category: p.bic_categoria,
+        municipio: cleanName(p.municipio_nombre),
+        description: p.bic_descripcion,
+        lat: coords[0], lng: coords[1]
       };
     });
-  } catch (e) {}
+    console.log(`[SUCCESS] ${bics.length} BICs cargados.`);
+  } catch (e) { console.error("[ERROR] loadBICs:", e.message); }
 }
 
 function loadMuniBorders() {
@@ -146,12 +153,17 @@ function loadMuniBorders() {
     const mPath = path.join(__dirname, 'geo_canarias_municipios.geojson');
     const data = JSON.parse(fs.readFileSync(mPath, 'utf8'));
     muniBorders = data.features
-      .filter(f => f.properties.gcd_isla === "ES709" || f.properties.geocode.startsWith("38"))
+      .filter(f => {
+        const isla = f.properties.gcd_isla;
+        const code = f.properties.geocode || "";
+        return isla === "ES709" || code.startsWith("38");
+      })
       .map(f => ({
         name: cleanName(f.properties.etiqueta),
         geometry: f.geometry
       }));
-  } catch (e) {}
+    console.log(`[SUCCESS] ${muniBorders.length} Municipios cargados.`);
+  } catch (e) { console.error("[ERROR] loadMuniBorders:", e.message); }
 }
 
 async function loadItinerarios() {
@@ -169,7 +181,7 @@ async function loadItinerarios() {
       itinerarios = geojson.features.map((f, index) => {
         const gp = f.properties;
         const geoMatricula = gp.itinerario_matricula || "";
-        const csvMatch = csvData.find(c => (c.itinerario_matricula || "").toUpperCase().trim() === geoMatricula.toUpperCase().trim());
+        const csvMatch = csvData.find(c => normalizeKey(c.itinerario_matricula) === normalizeKey(geoMatricula));
         let paths = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
         const dist = parseFloat(csvMatch ? csvMatch.itinerario_distancia : gp.itinerario_distancia) || 0;
         const desnivel = parseFloat(csvMatch ? csvMatch.itinerario_desnivel_positivo : 0) || 0;
@@ -187,8 +199,9 @@ async function loadItinerarios() {
           paths, startPoint: paths.length > 0 ? (Array.isArray(paths[0][0][0]) ? paths[0][0][0] : paths[0][0]) : null
         };
       });
+      console.log(`[SUCCESS] ${itinerarios.length} Itinerarios cargados.`);
     }
-  } catch (err) {}
+  } catch (err) { console.error("[ERROR] loadItinerarios:", err.message); }
 }
 
 async function init() {
@@ -204,3 +217,4 @@ app.get('/api/itinerarios', (req, res) => res.json(itinerarios));
 app.get('/api/bics', (req, res) => res.json(bics));
 app.get('/api/borders', (req, res) => res.json(muniBorders));
 app.get('/api/weather', (req, res) => res.json(realWeatherStations));
+app.get('/api/recommendation', (req, res) => res.json({ poi: pois[0], reason: "¡Recomendado!" }));

@@ -85,11 +85,11 @@ class POIProvider with ChangeNotifier {
   Map<String, String> get activeAlerts {
     Map<String, String> dynamicAlerts = {};
     for (var st in _weatherStations) {
-      if (st['temp'] == null) continue; // Saltamos si no hay dato real aún
+      if (st['temp'] == null) continue;
       final String muni = (st['municipio'] ?? "").toString().toUpperCase();
       final double temp = (st['temp'] as num).toDouble();
-      if (temp > 30) dynamicAlerts[muni] = "CALOR EXTREMO (${temp.toStringAsFixed(1)}°C)";
-      else if (temp < 5) dynamicAlerts[muni] = "BAJAS TEMPERATURAS (${temp.toStringAsFixed(1)}°C)";
+      if (temp > 30) dynamicAlerts[muni] = "CALOR (${temp.toStringAsFixed(1)}°C)";
+      else if (temp < 5) dynamicAlerts[muni] = "FRIO (${temp.toStringAsFixed(1)}°C)";
     }
     return dynamicAlerts;
   }
@@ -116,24 +116,39 @@ class POIProvider with ChangeNotifier {
   }
 
   Future<void> loadData() async {
-    print("[DEBUG] CARGANDO DATOS...");
+    print("[DEBUG] INICIANDO CARGA DE DATOS...");
     try {
-      _allPois = await _apiService.fetchPOIs();
-      _itineraries = await _apiService.fetchItineraries();
-      _weatherStations = await _apiService.fetchWeather();
-      _bics = await _apiService.fetchBICs();
-      _recommendation = await _apiService.fetchRecommendation();
-      
-      final rawBorders = await _apiService.fetchBordersRaw();
+      final results = await Future.wait([
+        _apiService.fetchPOIs(),
+        _apiService.fetchItineraries(),
+        _apiService.fetchWeather(),
+        _apiService.fetchBICs(),
+        _apiService.fetchBordersRaw(),
+        _apiService.fetchRecommendation(),
+      ]);
+
+      _allPois = results[0] as List<POI>;
+      _itineraries = results[1] as List<Itinerary>;
+      _weatherStations = results[2] as List<dynamic>;
+      _bics = results[3] as List<BIC>;
+      final rawBorders = results[4] as List<dynamic>;
+      _recommendation = results[5] as Map<String, dynamic>?;
+
+      print("[DEBUG] POIs: ${_allPois.length}, Senderos: ${_itineraries.length}, Stations: ${_weatherStations.length}, BICs: ${_bics.length}, Borders: ${rawBorders.length}");
+
       _borders = rawBorders.map((b) {
         final name = b['name'] as String;
-        final geom = b['geometry']['coordinates'] as List;
+        final geom = b['geometry'];
         List<List<LatLng>> paths = [];
-        if (b['geometry']['type'] == 'Polygon') {
-          paths.add((geom[0] as List).map((p) => LatLng(p[1], p[0])).toList());
-        } else {
-          for (var poly in geom) {
-            paths.add((poly[0] as List).map((p) => LatLng(p[1], p[0])).toList());
+        
+        if (geom['type'] == 'Polygon') {
+          final rings = geom['coordinates'] as List;
+          paths.add((rings[0] as List).map((p) => LatLng(p[1].toDouble(), p[0].toDouble())).toList());
+        } else if (geom['type'] == 'MultiPolygon') {
+          final polygons = geom['coordinates'] as List;
+          for (var poly in polygons) {
+            final rings = poly as List;
+            paths.add((rings[0] as List).map((p) => LatLng(p[1].toDouble(), p[0].toDouble())).toList());
           }
         }
         return MuniBorder(name: name, paths: paths);
@@ -141,25 +156,39 @@ class POIProvider with ChangeNotifier {
 
       _filterPois();
       _filterBics();
-      if (_allPois.isNotEmpty) _unlockMunicipality(_allPois[0].municipio);
-    } catch (e) {
-      print("[ERROR] Fallo en carga: $e");
+      
+      // Desbloqueo inicial (solo si no hay nada descubierto)
+      if (_discoveredMunicipios.isEmpty && _allPois.isNotEmpty) {
+        _unlockMunicipality(_allPois[0].municipio);
+      }
+      
+      print("[DEBUG] CARGA COMPLETADA EXITOSAMENTE. Municipios descubiertos: ${_discoveredMunicipios.length}");
+    } catch (e, stack) {
+      print("[ERROR] FALLO CRITICO EN CARGA: $e");
+      print(stack);
     } finally {
       notifyListeners();
     }
   }
 
   void _unlockMunicipality(String muni) {
-    if (_discoveredMunicipios.contains(muni)) return;
-    _discoveredMunicipios.add(muni);
+    String m = muni.toUpperCase().trim();
+    if (m == "TENERIFE" || m == "") return;
+    if (_discoveredMunicipios.contains(m)) return;
+    
+    print("[DEBUG] DESBLOQUEANDO MUNICIPIO: $m");
+    _discoveredMunicipios.add(m);
+    
     try {
       Vibration.hasVibrator().then((has) {
         if (has == true) Vibration.vibrate(duration: 100);
       });
     } catch (e) {}
-    final sameMuniPois = _allPois.where((p) => p.municipio == muni);
+    
+    final sameMuniPois = _allPois.where((p) => p.municipio.toUpperCase().trim() == m);
     for (var p in sameMuniPois) { _discoveredPoiIds.add(p.id); }
-    final sameMuniBics = _bics.where((b) => b.municipio == muni);
+    
+    final sameMuniBics = _bics.where((b) => b.municipio.toUpperCase().trim() == m);
     for (var b in sameMuniBics) { _discoveredPoiIds.add(b.id); }
   }
 
@@ -198,7 +227,7 @@ class POIProvider with ChangeNotifier {
 
   void _checkPassiveUnlocking(Position pos) {
     for (var poi in _allPois) {
-      if (!_discoveredMunicipios.contains(poi.municipio)) {
+      if (!_discoveredMunicipios.contains(poi.municipio.toUpperCase().trim())) {
         double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, poi.lat, poi.lng);
         if (dist < 2000) {
           _unlockMunicipality(poi.municipio);
@@ -239,10 +268,7 @@ class POIProvider with ChangeNotifier {
     double minDistance = double.infinity;
     for (var poi in _allPois) {
       double dist = Geolocator.distanceBetween(_currentPosition!.latitude, _currentPosition!.longitude, poi.lat, poi.lng);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closest = poi;
-      }
+      if (dist < minDistance) { minDistance = dist; closest = poi; }
     }
     return minDistance < 2000 ? closest : null;
   }
