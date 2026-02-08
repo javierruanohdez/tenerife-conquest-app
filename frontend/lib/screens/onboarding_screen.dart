@@ -16,12 +16,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       "title": "LA ISLA TE NECESITA",
       "desc": "Tenerife ha quedado oculta bajo la niebla. Tu misión es redescubrir cada rincón de nuestra tierra.",
-      "icon": "🌫️"
+      "icon": "🏝️"
     },
     {
       "title": "CONQUISTA TERRITORIOS",
       "desc": "Entra en los municipios para despejar la niebla. Cada lugar visitado ilumina el mapa oficial del Cabildo.",
-      "icon": "📍"
+      "icon": "🗺️"
     },
     {
       "title": "CAPTURA EL PATRIMONIO",
