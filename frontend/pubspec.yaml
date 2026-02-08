@@ -45,6 +45,8 @@ dependencies:
   path_provider: ^2.1.5
   vibration: ^3.1.5
   image_picker: ^1.2.1
+  mobile_scanner: ^7.1.4
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +58,21 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/Icono.png"
+  web:
+    generate: true
+    image_path: "assets/Icono.png"
+  windows:
+    generate: true
+    image_path: "assets/Icono.png"
+  macos:
+    generate: true
+    image_path: "assets/Icono.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

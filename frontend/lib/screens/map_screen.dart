@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../providers/poi_provider.dart';
 import '../models/poi.dart';
 import '../models/bic.dart';
-import '../models/itinerary.dart'; // NUEVO IMPORT
+import '../models/itinerary.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -75,7 +75,6 @@ class _MapScreenState extends State<MapScreen> {
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.example.tnf_datos_app',
               ),
-              // CAPA DE NIEBLA
               if (_showFog)
                 PolygonLayer(
                   polygons: poiProvider.borders.where((muni) {
@@ -91,7 +90,6 @@ class _MapScreenState extends State<MapScreen> {
                     ));
                   }).toList(),
                 ),
-              // CAPA DE RUTAS Y BORDES (DIBUJADA ENCIMA DE LA NIEBLA)
               PolylineLayer(
                 polylines: [
                   ...poiProvider.borders.expand((b) => b.paths).map((path) => Polyline(
@@ -99,18 +97,17 @@ class _MapScreenState extends State<MapScreen> {
                     color: Colors.white.withOpacity(0.3),
                     strokeWidth: 1.5,
                   )),
-                  ...poiProvider.itineraries.where((it) {
+                  // DIBUJO DE SENDEROS (FORZADO)
+                  ...poiProvider.itineraries.where((it) => it.paths != null).expand((it) {
                     final isHighlighted = poiProvider.highlightedItineraryId == it.matricula;
-                    return (poiProvider.showAllTrails || isHighlighted) && it.paths != null;
-                  }).expand((it) {
-                    final isHighlighted = poiProvider.highlightedItineraryId == it.matricula;
+                    final color = Color(int.parse(it.difficultyColor.replaceFirst('#', '0xFF')));
                     return it.paths!.map((path) {
                       final coords = path as List;
-                      final points = coords.map((p) => LatLng(p[1], p[0])).toList();
+                      final points = coords.map((p) => LatLng(p[1].toDouble(), p[0].toDouble())).toList();
                       return Polyline(
                         points: points,
-                        color: isHighlighted ? Colors.orange : Colors.orangeAccent.withOpacity(0.8),
-                        strokeWidth: isHighlighted ? 6.0 : 3.5,
+                        color: isHighlighted ? Colors.orange : color.withOpacity(0.8),
+                        strokeWidth: isHighlighted ? 6.0 : 3.0,
                       );
                     });
                   }),
@@ -144,14 +141,17 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   // MARCADORES DE INICIO DE SENDEROS (Interactivos)
                   if (poiProvider.showAllTrails)
-                    ...poiProvider.itineraries.where((it) => it.startPoint != null).map((it) => Marker(
-                      point: LatLng(it.startPoint![1], it.startPoint![0]),
-                      width: 35, height: 35,
-                      child: GestureDetector(
-                        onTap: () => _showItinerarySheet(it, poiProvider),
-                        child: _buildMarkerIcon(Icons.directions_walk, Colors.orange[800]!),
-                      ),
-                    )),
+                    ...poiProvider.itineraries.where((it) => it.startPoint != null).map((it) {
+                      final color = Color(int.parse(it.difficultyColor.replaceFirst('#', '0xFF')));
+                      return Marker(
+                        point: LatLng(it.startPoint![1].toDouble(), it.startPoint![0].toDouble()),
+                        width: 45, height: 45,
+                        child: GestureDetector(
+                          onTap: () => _showItinerarySheet(it, poiProvider),
+                          child: _buildMarkerIcon(Icons.directions_walk, color),
+                        ),
+                      );
+                    }),
                 ],
               ),
             ],
@@ -185,12 +185,6 @@ class _MapScreenState extends State<MapScreen> {
             right: 16,
             child: _buildScoreCard(poiProvider),
           ),
-
-          if (poiProvider.selectedItinerary != null)
-            Positioned(
-              top: 160, left: 16, right: 16,
-              child: _buildActiveRouteCard(poiProvider),
-            ),
         ],
       ),
       floatingActionButton: Padding(
@@ -251,69 +245,6 @@ class _MapScreenState extends State<MapScreen> {
     return const SizedBox.shrink();
   }
 
-  void _showItinerarySheet(Itinerary it, POIProvider provider) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: Text(it.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-                Chip(label: Text(it.matricula), backgroundColor: Colors.orange[100]),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(it.description, style: const TextStyle(fontSize: 14, height: 1.4)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.straighten, color: Colors.grey, size: 18),
-                const SizedBox(width: 8),
-                Text("Distancia: ${it.distancia} m", style: const TextStyle(fontSize: 16)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.trending_up, color: Colors.green, size: 18),
-                const SizedBox(width: 8),
-                Text("Desnivel: +${it.desnivelPos}m / -${it.desnivelNeg}m", style: const TextStyle(fontSize: 14)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text("📍 Inicio: ${it.inicio}", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
-            Text("🏁 Fin: ${it.fin}", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.play_arrow),
-              label: const Text("INICIAR SEGUIMIENTO DE RUTA"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange[800],
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: () {
-                provider.setHighlightedItinerary(it.matricula);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Ruta ${it.matricula} activada. ¡Sigue la línea naranja!")),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _filterChip(String label, bool selected, Function(bool) onSelected, IconData icon) {
     return FilterChip(
       label: Text(label),
@@ -351,17 +282,6 @@ class _MapScreenState extends State<MapScreen> {
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildActiveRouteCard(POIProvider provider) {
-    return Card(
-      child: ListTile(
-        leading: const CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.route, color: Colors.white)),
-        title: Text(provider.selectedItinerary!.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("${provider.selectedItinerary!.matricula}"),
-        trailing: IconButton(icon: const Icon(Icons.close), onPressed: () => provider.setHighlightedItinerary(null)),
       ),
     );
   }
@@ -526,9 +446,76 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  void _showItinerarySheet(Itinerary it, POIProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text(it.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
+                Chip(label: Text(it.matricula), backgroundColor: Colors.orange[100]),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Dificultad: ${it.difficulty}", 
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(int.parse(it.difficultyColor.replaceFirst('#', '0xFF'))))),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(12)),
+                  child: Row(
+                    children: [
+                      Icon(it.isCircular ? Icons.cached : Icons.trending_flat, size: 14, color: Colors.blue),
+                      const SizedBox(width: 4),
+                      Text(it.isCircular ? "CIRCULAR" : "LINEAL", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Icon(Icons.straighten, color: Colors.grey, size: 18),
+                const SizedBox(width: 8),
+                Text("Distancia: ${it.distancia.toStringAsFixed(0)} m", style: const TextStyle(fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.play_arrow),
+              label: const Text("INICIAR SEGUIMIENTO DE RUTA"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[800],
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                provider.setHighlightedItinerary(it.matricula);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Ruta ${it.matricula} activada. ¡Sigue la línea!")),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildNearbyTrailsSection(POI poi, POIProvider provider) {
     final nearbyTrails = provider.itineraries.where((it) => 
-      poi.enp.isNotEmpty && it.espacios.contains(poi.enp)
+      poi.enp.isNotEmpty && it.name.contains(poi.enp) || it.municipios.contains(poi.municipio)
     ).toList();
 
     if (nearbyTrails.isEmpty) return const SizedBox.shrink();
@@ -546,26 +533,31 @@ class _MapScreenState extends State<MapScreen> {
             itemCount: nearbyTrails.length,
             itemBuilder: (context, index) {
               final it = nearbyTrails[index];
+              final color = Color(int.parse(it.difficultyColor.replaceFirst('#', '0xFF')));
               return GestureDetector(
                 onTap: () {
                   provider.setHighlightedItinerary(it.matricula);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Resaltando ruta: ${it.name}")),
-                  );
+                  Navigator.pop(context); // Cerramos ficha POI
+                  // Volamos al inicio del sendero
+                  if (it.startPoint != null) {
+                    _mapController.move(LatLng(it.startPoint![1], it.startPoint![0]), 14.0);
+                  }
+                  // Abrimos la ficha del sendero automáticamente
+                  _showItinerarySheet(it, provider);
                 },
                 child: Card(
-                  color: Colors.orange[50],
+                  elevation: 2,
+                  color: color.withOpacity(0.1),
                   child: Container(
                     width: 200,
                     padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(it.matricula, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                        Text(it.matricula, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
                         Text(it.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
                         const Spacer(),
-                        Text("${it.distancia}m", style: const TextStyle(fontSize: 10)),
+                        Text("${it.distancia.toStringAsFixed(0)}m", style: const TextStyle(fontSize: 10)),
                       ],
                     ),
                   ),

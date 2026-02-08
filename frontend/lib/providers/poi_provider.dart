@@ -11,7 +11,6 @@ class Visit {
   final POI poi;
   final DateTime date;
   final String photoUrl;
-
   Visit({required this.poi, required this.date, this.photoUrl = "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"});
 }
 
@@ -19,7 +18,6 @@ class Explorer {
   final String name;
   final int conquests;
   final bool isMe;
-
   Explorer({required this.name, required this.conquests, this.isMe = false});
 }
 
@@ -48,7 +46,7 @@ class POIProvider with ChangeNotifier {
   String _selectedEspacio = "Todos";
   Itinerary? _selectedItinerary;
   String? _highlightedItineraryId;
-  bool _showAllTrails = true; // CAMBIADO A TRUE PARA TESTEO
+  bool _showAllTrails = true; // SIEMPRE VISIBLE POR AHORA
   Map<String, dynamic>? _recommendation;
   
   Position? _currentPosition;
@@ -104,9 +102,11 @@ class POIProvider with ChangeNotifier {
   }
 
   Future<void> loadData() async {
+    print("[DEBUG] CARGANDO DATOS...");
     try {
       _allPois = await _apiService.fetchPOIs();
       _itineraries = await _apiService.fetchItineraries();
+      print("[DEBUG] SENDEROS RECIBIDOS: ${_itineraries.length}");
       _bics = await _apiService.fetchBICs();
       _recommendation = await _apiService.fetchRecommendation();
       
@@ -132,24 +132,47 @@ class POIProvider with ChangeNotifier {
         _unlockMunicipality(_allPois[0].municipio);
       }
     } catch (e) {
-      print("Error loading data: $e");
+      print("[ERROR] Fallo en carga: $e");
     } finally {
       notifyListeners();
     }
   }
 
-  void _unlockMunicipality(String muni) {
-    if (_discoveredMunicipios.contains(muni)) return;
-    _discoveredMunicipios.add(muni);
-    
-    try { Vibration.vibrate(duration: 100); } catch (e) {}
-    
-    final sameMuniPois = _allPois.where((p) => p.municipio == muni);
-    for (var p in sameMuniPois) { _discoveredPoiIds.add(p.id); }
-    
-    final sameMuniBics = _bics.where((b) => b.municipio == muni);
-    for (var b in sameMuniBics) { _discoveredPoiIds.add(b.id); }
-  }
+    void _unlockMunicipality(String muni) {
+
+      if (_discoveredMunicipios.contains(muni)) return;
+
+      _discoveredMunicipios.add(muni);
+
+      
+
+      // Solo vibra si el dispositivo lo permite (evita error en Web)
+
+      try {
+
+        Vibration.hasVibrator().then((has) {
+
+          if (has == true) Vibration.vibrate(duration: 100);
+
+        });
+
+      } catch (e) {}
+
+      
+
+      final sameMuniPois = _allPois.where((p) => p.municipio == muni);
+
+      for (var p in sameMuniPois) { _discoveredPoiIds.add(p.id); }
+
+      
+
+      final sameMuniBics = _bics.where((b) => b.municipio == muni);
+
+      for (var b in sameMuniBics) { _discoveredPoiIds.add(b.id); }
+
+    }
+
+  
 
   void setFilter(String espacio) {
     _selectedEspacio = espacio;
