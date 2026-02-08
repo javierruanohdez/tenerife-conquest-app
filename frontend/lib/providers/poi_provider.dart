@@ -48,6 +48,7 @@ class POIProvider with ChangeNotifier {
   String? _highlightedItineraryId;
   bool _showAllTrails = true; // SIEMPRE VISIBLE POR AHORA
   Map<String, dynamic>? _recommendation;
+  String _userName = "Yone Explorador";
   
   Position? _currentPosition;
   int _points = 0;
@@ -84,10 +85,11 @@ class POIProvider with ChangeNotifier {
   String? get highlightedItineraryId => _highlightedItineraryId;
   bool get showAllTrails => _showAllTrails;
   Map<String, dynamic>? get recommendation => _recommendation;
+  String get userName => _userName;
 
   List<Explorer> get globalRanking {
     int myIndex = _globalRanking.indexWhere((e) => e.isMe);
-    _globalRanking[myIndex] = Explorer(name: "Yone Explorador", conquests: _visits.length, isMe: true);
+    _globalRanking[myIndex] = Explorer(name: _userName, conquests: _visits.length, isMe: true);
     final list = List<Explorer>.from(_globalRanking);
     list.sort((a, b) => b.conquests.compareTo(a.conquests));
     return list;
@@ -95,10 +97,15 @@ class POIProvider with ChangeNotifier {
 
   List<Explorer> get groupRanking {
     int myIndex = _groupRanking.indexWhere((e) => e.isMe);
-    _groupRanking[myIndex] = Explorer(name: "Yone Explorador", conquests: _visits.length, isMe: true);
+    _groupRanking[myIndex] = Explorer(name: _userName, conquests: _visits.length, isMe: true);
     final list = List<Explorer>.from(_groupRanking);
     list.sort((a, b) => b.conquests.compareTo(a.conquests));
     return list;
+  }
+
+  void updateUserName(String newName) {
+    _userName = newName;
+    notifyListeners();
   }
 
   Future<void> loadData() async {

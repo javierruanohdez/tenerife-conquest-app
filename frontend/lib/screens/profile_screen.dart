@@ -16,7 +16,7 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildHeader(provider),
+            _buildHeader(context, provider),
             const SizedBox(height: 20),
             _buildStatsRow(provider),
             const SizedBox(height: 20),
@@ -109,7 +109,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(POIProvider provider) {
+  Widget _buildHeader(BuildContext context, POIProvider provider) {
     return Container(
       padding: const EdgeInsets.only(top: 60, bottom: 30),
       decoration: BoxDecoration(
@@ -125,12 +125,49 @@ class ProfileScreen extends StatelessWidget {
               child: Icon(Icons.person, size: 60, color: Colors.green),
             ),
             const SizedBox(height: 16),
-            const Text("Yone Explorador", 
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(width: 48), // Spacer for centering
+                Text(provider.userName, 
+                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.white70, size: 20),
+                  onPressed: () => _editUserName(context, provider),
+                ),
+              ],
+            ),
             Text(provider.points > 500 ? "Guardián de la Isla" : "Eco-Viajero", 
               style: const TextStyle(color: Colors.white70, fontSize: 16)),
           ],
         ),
+      ),
+    );
+  }
+
+  void _editUserName(BuildContext context, POIProvider provider) {
+    final TextEditingController controller = TextEditingController(text: provider.userName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Cambiar nombre de usuario"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "Nuevo nombre"),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                provider.updateUserName(controller.text.trim());
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text("Guardar"),
+          ),
+        ],
       ),
     );
   }
