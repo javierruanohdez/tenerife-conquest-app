@@ -16,7 +16,7 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildHeader(provider),
+            _buildHeader(context, provider),
             const SizedBox(height: 20),
             _buildStatsRow(provider),
             const SizedBox(height: 20),
@@ -109,7 +109,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(POIProvider provider) {
+  Widget _buildHeader(BuildContext context, POIProvider provider) {
     return Container(
       padding: const EdgeInsets.only(top: 60, bottom: 30),
       decoration: BoxDecoration(
@@ -125,12 +125,49 @@ class ProfileScreen extends StatelessWidget {
               child: Icon(Icons.person, size: 60, color: Colors.green),
             ),
             const SizedBox(height: 16),
-            const Text("Yone Explorador", 
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(width: 48), // Spacer for centering
+                Text(provider.userName, 
+                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.white70, size: 20),
+                  onPressed: () => _editUserName(context, provider),
+                ),
+              ],
+            ),
             Text(provider.points > 500 ? "Guardián de la Isla" : "Eco-Viajero", 
               style: const TextStyle(color: Colors.white70, fontSize: 16)),
           ],
         ),
+      ),
+    );
+  }
+
+  void _editUserName(BuildContext context, POIProvider provider) {
+    final TextEditingController controller = TextEditingController(text: provider.userName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Cambiar nombre de usuario"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "Nuevo nombre"),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                provider.updateUserName(controller.text.trim());
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text("Guardar"),
+          ),
+        ],
       ),
     );
   }
@@ -222,9 +259,9 @@ class ProfileScreen extends StatelessWidget {
       children: [
         ListTile(
           leading: const Icon(Icons.settings),
-          title: const Text("Ajustes de la cuenta"),
+          title: const Text("Ajustes de la app"),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () {},
+          onTap: () => _showSettingsDialog(context),
         ),
         ListTile(
           leading: const Icon(Icons.info_outline),
@@ -238,6 +275,43 @@ class ProfileScreen extends StatelessWidget {
         _buildInstitutionalFooter(),
         const SizedBox(height: 20),
       ],
+    );
+  }
+
+  void _showSettingsDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Ajustes de la app", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.dark_mode),
+              title: const Text("Tema"),
+              subtitle: const Text("Claro / Oscuro"),
+              trailing: Switch(value: false, onChanged: (v) {}),
+            ),
+            ListTile(
+              leading: const Icon(Icons.accessibility),
+              title: const Text("Accesibilidad"),
+              subtitle: const Text("Texto grande, alto contraste..."),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: const Text("Idioma"),
+              subtitle: const Text("Español (ES)"),
+              onTap: () {},
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 
