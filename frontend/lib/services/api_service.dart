@@ -144,7 +144,31 @@ class ApiService {
 
   
 
-      Future<bool> sendReport(int poiId, String type, String comment) async {
+      Future<List<dynamic>> fetchWeather() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/weather'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchStationSensors(int stationId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/weather/station/$stationId'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> sendReport(int poiId, String type, String comment) async {
 
   
 

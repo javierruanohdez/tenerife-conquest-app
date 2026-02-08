@@ -34,26 +34,21 @@ class POIProvider with ChangeNotifier {
   List<BIC> _bics = [];
   List<BIC> _filteredBics = [];
   List<MuniBorder> _borders = [];
+  List<dynamic> _weatherStations = [];
   Set<int> _discoveredPoiIds = {};
   Set<String> _discoveredMunicipios = {}; 
   List<Visit> _visits = [];
   
-  Map<String, String> _activeAlerts = {
-    "SANTA CRUZ DE TENERIFE": "ALERTA POR VIENTO",
-    "OROTAVA (LA)": "RIESGO DE INCENDIO",
-  };
-  
   String _selectedEspacio = "Todos";
   Itinerary? _selectedItinerary;
   String? _highlightedItineraryId;
-  bool _showAllTrails = true; // SIEMPRE VISIBLE POR AHORA
+  bool _showAllTrails = true;
   Map<String, dynamic>? _recommendation;
   
   Position? _currentPosition;
   int _points = 0;
   final ApiService _apiService = ApiService();
 
-  // DATOS DE RANKING SIMULADOS
   final List<Explorer> _globalRanking = [
     Explorer(name: "Ayoze_Anaga", conquests: 45),
     Explorer(name: "Elena_Teide", conquests: 38),
@@ -73,10 +68,10 @@ class POIProvider with ChangeNotifier {
   List<Itinerary> get itineraries => _itineraries;
   List<BIC> get bics => _filteredBics;
   List<MuniBorder> get borders => _borders;
+  List<dynamic> get weatherStations => _weatherStations;
   Set<int> get discoveredPoiIds => _discoveredPoiIds;
   Set<String> get discoveredMunicipios => _discoveredMunicipios;
   List<Visit> get visits => _visits;
-  Map<String, String> get activeAlerts => _activeAlerts;
   Position? get currentPosition => _currentPosition;
   int get points => _points;
   String get selectedEspacio => _selectedEspacio;
@@ -84,6 +79,18 @@ class POIProvider with ChangeNotifier {
   String? get highlightedItineraryId => _highlightedItineraryId;
   bool get showAllTrails => _showAllTrails;
   Map<String, dynamic>? get recommendation => _recommendation;
+
+  Map<String, String> get activeAlerts {
+    Map<String, String> dynamicAlerts = {};
+    for (var st in _weatherStations) {
+      if (st['temp'] == null) continue; // Saltamos si no hay dato real aún
+      final String muni = (st['municipio'] ?? "").toString().toUpperCase();
+      final double temp = (st['temp'] as num).toDouble();
+      if (temp > 30) dynamicAlerts[muni] = "CALOR EXTREMO (${temp.toStringAsFixed(1)}°C)";
+      else if (temp < 5) dynamicAlerts[muni] = "BAJAS TEMPERATURAS (${temp.toStringAsFixed(1)}°C)";
+    }
+    return dynamicAlerts;
+  }
 
   List<Explorer> get globalRanking {
     int myIndex = _globalRanking.indexWhere((e) => e.isMe);
@@ -106,7 +113,7 @@ class POIProvider with ChangeNotifier {
     try {
       _allPois = await _apiService.fetchPOIs();
       _itineraries = await _apiService.fetchItineraries();
-      print("[DEBUG] SENDEROS RECIBIDOS: ${_itineraries.length}");
+      _weatherStations = await _apiService.fetchWeather();
       _bics = await _apiService.fetchBICs();
       _recommendation = await _apiService.fetchRecommendation();
       
@@ -127,10 +134,7 @@ class POIProvider with ChangeNotifier {
 
       _filterPois();
       _filterBics();
-
-      if (_allPois.isNotEmpty) {
-        _unlockMunicipality(_allPois[0].municipio);
-      }
+      if (_allPois.isNotEmpty) _unlockMunicipality(_allPois[0].municipio);
     } catch (e) {
       print("[ERROR] Fallo en carga: $e");
     } finally {
@@ -138,47 +142,24 @@ class POIProvider with ChangeNotifier {
     }
   }
 
-    void _unlockMunicipality(String muni) {
-
-      if (_discoveredMunicipios.contains(muni)) return;
-
-      _discoveredMunicipios.add(muni);
-
-      
-
-      // Solo vibra si el dispositivo lo permite (evita error en Web)
-
-      try {
-
-        Vibration.hasVibrator().then((has) {
-
-          if (has == true) Vibration.vibrate(duration: 100);
-
-        });
-
-      } catch (e) {}
-
-      
-
-      final sameMuniPois = _allPois.where((p) => p.municipio == muni);
-
-      for (var p in sameMuniPois) { _discoveredPoiIds.add(p.id); }
-
-      
-
-      final sameMuniBics = _bics.where((b) => b.municipio == muni);
-
-      for (var b in sameMuniBics) { _discoveredPoiIds.add(b.id); }
-
-    }
-
-  
+  void _unlockMunicipality(String muni) {
+    if (_discoveredMunicipios.contains(muni)) return;
+    _discoveredMunicipios.add(muni);
+    try {
+      Vibration.hasVibrator().then((has) {
+        if (has == true) Vibration.vibrate(duration: 100);
+      });
+    } catch (e) {}
+    final sameMuniPois = _allPois.where((p) => p.municipio == muni);
+    for (var p in sameMuniPois) { _discoveredPoiIds.add(p.id); }
+    final sameMuniBics = _bics.where((b) => b.municipio == muni);
+    for (var b in sameMuniBics) { _discoveredPoiIds.add(b.id); }
+  }
 
   void setFilter(String espacio) {
     _selectedEspacio = espacio;
     _selectedItinerary = null;
-    _filterPois();
-    _filterBics();
+    _filterPois(); _filterBics();
     notifyListeners();
   }
 
@@ -193,19 +174,13 @@ class POIProvider with ChangeNotifier {
   }
 
   void _filterPois() {
-    if (_selectedEspacio == "Todos") {
-      _filteredPois = List.from(_allPois);
-    } else {
-      _filteredPois = _allPois.where((p) => p.enp.contains(_selectedEspacio)).toList();
-    }
+    if (_selectedEspacio == "Todos") _filteredPois = List.from(_allPois);
+    else _filteredPois = _allPois.where((p) => p.enp.contains(_selectedEspacio)).toList();
   }
 
   void _filterBics() {
-    if (_selectedEspacio == "Todos") {
-      _filteredBics = _bics;
-    } else {
-      _filteredBics = _bics.where((b) => _selectedEspacio.contains(b.municipio)).toList();
-    }
+    if (_selectedEspacio == "Todos") _filteredBics = _bics;
+    else _filteredBics = _bics.where((b) => _selectedEspacio.contains(b.municipio)).toList();
   }
 
   void updateLocation(Position position) {
@@ -233,7 +208,6 @@ class POIProvider with ChangeNotifier {
     _points += 100;
     String muni = item is POI ? item.municipio : (item as BIC).municipio;
     _unlockMunicipality(muni);
-    try { Vibration.vibrate(pattern: [0, 100, 50, 100]); } catch (e) {}
     _visits.add(Visit(
       poi: item is POI ? item : POI(
         id: item.id, name: item.name, lat: item.lat, lng: item.lng, 
@@ -252,15 +226,8 @@ class POIProvider with ChangeNotifier {
     if (distance <= 500) forceCheckIn(item);
   }
 
-  POI? get nearestPoi {
-    if (_currentPosition == null || _allPois.isEmpty) return null;
-    POI? closest;
-    double minDistance = double.infinity;
-    for (var poi in _allPois) {
-      double dist = Geolocator.distanceBetween(_currentPosition!.latitude, _currentPosition!.longitude, poi.lat, poi.lng);
-      if (dist < minDistance) { minDistance = dist; closest = poi; }
-    }
-    return minDistance < 1000 ? closest : null;
+  Future<Map<String, dynamic>?> fetchStationSensors(int stationId) async {
+    return await _apiService.fetchStationSensors(stationId);
   }
 
   Future<bool> sendReport(int poiId, String type, String comment) async {

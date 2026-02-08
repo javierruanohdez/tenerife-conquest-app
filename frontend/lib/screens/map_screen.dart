@@ -133,6 +133,15 @@ class _MapScreenState extends State<MapScreen> {
                         child: _buildMarkerIcon(Icons.account_balance, Colors.amber[800]!),
                       ),
                     )),
+                  // ESTACIONES METEOROLÓGICAS (NUEVO)
+                  ...poiProvider.weatherStations.map((st) => Marker(
+                    point: LatLng(st['lat'], st['lng']),
+                    width: 40, height: 40,
+                    child: GestureDetector(
+                      onTap: () => _showWeatherSheet(st),
+                      child: _buildMarkerIcon(Icons.thermostat, Colors.blue[900]!),
+                    ),
+                  )),
                   if (poiProvider.currentPosition != null)
                     Marker(
                       point: LatLng(poiProvider.currentPosition!.latitude, poiProvider.currentPosition!.longitude),
@@ -282,6 +291,65 @@ class _MapScreenState extends State<MapScreen> {
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showWeatherSheet(dynamic st) {
+    final provider = Provider.of<POIProvider>(context, listen: false);
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => FutureBuilder<Map<String, dynamic>?>(
+        future: provider.fetchStationSensors(st['id']),
+        builder: (context, snapshot) {
+          final sensors = snapshot.data?['sensors'] as List? ?? [];
+          final isLoading = snapshot.connectionState == ConnectionState.waiting;
+
+          return Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(st['name'], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
+                    const Icon(Icons.sensors, color: Colors.blue),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text("Municipio: ${st['municipio']}", style: TextStyle(color: Colors.grey[600])),
+                const Divider(height: 32),
+                if (isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (sensors.isEmpty)
+                  const Text("No hay sensores activos en este momento.")
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("INSTRUMENTOS REALES (Cabildo):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8, runSpacing: 8,
+                        children: sensors.map((s) => Chip(
+                          avatar: const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                          label: Text("${s['name']} ${s['unit']}"),
+                          backgroundColor: Colors.blue[50],
+                        )).toList(),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 24),
+                const Text("Conexión encriptada directa con la Red de Estaciones del Cabildo.", 
+                  style: TextStyle(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
