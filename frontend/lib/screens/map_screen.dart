@@ -336,8 +336,11 @@ class _MapScreenState extends State<MapScreen> {
                       Wrap(
                         spacing: 8, runSpacing: 8,
                         children: sensors.map((s) => Chip(
-                          avatar: const Icon(Icons.check_circle, size: 16, color: Colors.green),
-                          label: Text("${s['name']} ${s['unit']}"),
+                          avatar: Icon(
+                            s['name'].toString().contains("Temperatura") ? Icons.thermostat : Icons.check_circle, 
+                            size: 16, color: Colors.green
+                          ),
+                          label: Text("${s['name']}: ${s['value']} ${s['unit']}"),
                           backgroundColor: Colors.blue[50],
                         )).toList(),
                       ),

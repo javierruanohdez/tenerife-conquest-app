@@ -226,6 +226,20 @@ class POIProvider with ChangeNotifier {
     if (distance <= 500) forceCheckIn(item);
   }
 
+  POI? get nearestPoi {
+    if (_currentPosition == null || _allPois.isEmpty) return null;
+    POI? closest;
+    double minDistance = double.infinity;
+    for (var poi in _allPois) {
+      double dist = Geolocator.distanceBetween(_currentPosition!.latitude, _currentPosition!.longitude, poi.lat, poi.lng);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closest = poi;
+      }
+    }
+    return minDistance < 2000 ? closest : null;
+  }
+
   Future<Map<String, dynamic>?> fetchStationSensors(int stationId) async {
     return await _apiService.fetchStationSensors(stationId);
   }

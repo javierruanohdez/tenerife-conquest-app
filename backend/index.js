@@ -58,24 +58,50 @@ async function fetchRealWeather() {
   }
 }
 
-// ENDPOINT DE LECTURA REAL DE SENSORES
+// ENDPOINT DE LECTURA 100% REAL DE VALORES (Sensores + Lecturas)
 app.get('/api/weather/station/:id', async (req, res) => {
   const stationId = req.params.id;
+  const today = new Date().toISOString().split('T')[0]; // Formato AAAA-MM-DD
+  
   try {
-    const response = await axios.get(`${CABILDO_METEO_API}/stations/${stationId}/sensors`);
-    let sensors = response.data;
-    if (sensors && !Array.isArray(sensors)) sensors = sensors.sensors || sensors.data || [];
-    
-    res.json({
-      id: stationId,
-      sensors: sensors.map(s => ({
-        name: s.name,
-        unit: s.unit || "",
-        alias: s.alias
-      }))
-    });
+    // 1. Obtenemos la lista de sensores de la estación
+    const stationResp = await axios.get(`${CABILDO_METEO_API}/stations/${stationId}/sensors`);
+    let rawSensors = [];
+    if (stationResp.data && stationResp.data.stations && stationResp.data.stations.length > 0) {
+      rawSensors = stationResp.data.stations[0].sensors || [];
+    }
+
+    // 2. Para cada sensor, pedimos su última lectura del día de hoy
+    const sensorData = await Promise.all(rawSensors.map(async (s) => {
+      try {
+        const sid = s.id_weatherstationsensor;
+        const readingsUrl = `${CABILDO_METEO_API}/readings/station/${stationId}/sensor/${sid}/from/${today}/to/${today}/1`;
+        const rResp = await axios.get(readingsUrl, { timeout: 4000 });
+        
+        let val = "---";
+        if (rResp.data && rResp.data.readings && rResp.data.readings.sensors && rResp.data.readings.sensors.length > 0) {
+          const sensorReadings = rResp.data.readings.sensors[0].values;
+          if (sensorReadings && sensorReadings.length > 0) {
+            // Cogemos el último valor registrado
+            val = sensorReadings[sensorReadings.length - 1].observation_value;
+          }
+        }
+
+        return {
+          name: s.sensor_name,
+          unit: s.unit || "",
+          value: val,
+          alias: s.sensor_alias
+        };
+      } catch (err) {
+        return { name: s.sensor_name, unit: s.unit, value: "N/A", alias: s.sensor_alias };
+      }
+    }));
+
+    res.json({ id: stationId, sensors: sensorData });
   } catch (e) {
-    res.status(500).json({ error: "Error consultando sensores." });
+    console.error(`Error en lecturas de estación ${stationId}:`, e.message);
+    res.status(500).json({ error: "Error obteniendo datos en tiempo real del Cabildo." });
   }
 });
 
