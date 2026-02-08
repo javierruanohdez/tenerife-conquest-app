@@ -34,7 +34,7 @@ Este es el pilar central del desarrollo, garantizando que cualquier ciudadano pu
 
 ### 6. Manual de Instalación y Ejecución
 Para compilar los entregables obligatorios:
-1.  **Android:** `flutter build apk --release` (Genera el APK para entrega).
+1.  **Android:** `flutter build apk --release` (Genera el APK).
 2.  **iOS:** `flutter build ipa` (Requiere macOS para generar el fichero IPA).
 3.  **Servidor:** `cd backend && npm install && node index.js`.
 
