@@ -26,7 +26,7 @@ La aplicación garantiza la inclusión total:
 *   **Navegación Intuitiva:** Interfaz moderna basada en menús inferiores, optimizada para el uso con una sola mano.
 
 ### 5. Sostenibilidad y Tecnologías Abiertas
-*   **Tecnología:** Flutter para un despliegue nativo multiplataforma (Android/iOS).
+*   **Tecnología:** Flutter para un despliegue nativo multiplataforma.
 *   **Licenciamiento:** El código se entrega bajo la **European Union Public Licence (EUPL) v1.2**.
 *   **Ciencia Ciudadana:** Módulo integrado para que los usuarios reporten incidencias en tiempo real, devolviendo datos valiosos al Cabildo para el mantenimiento del entorno.
 
