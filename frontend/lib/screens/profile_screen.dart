@@ -259,9 +259,9 @@ class ProfileScreen extends StatelessWidget {
       children: [
         ListTile(
           leading: const Icon(Icons.settings),
-          title: const Text("Ajustes de la cuenta"),
+          title: const Text("Ajustes de la app"),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () {},
+          onTap: () => _showSettingsDialog(context),
         ),
         ListTile(
           leading: const Icon(Icons.info_outline),
@@ -275,6 +275,43 @@ class ProfileScreen extends StatelessWidget {
         _buildInstitutionalFooter(),
         const SizedBox(height: 20),
       ],
+    );
+  }
+
+  void _showSettingsDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Ajustes de la app", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.dark_mode),
+              title: const Text("Tema"),
+              subtitle: const Text("Claro / Oscuro"),
+              trailing: Switch(value: false, onChanged: (v) {}),
+            ),
+            ListTile(
+              leading: const Icon(Icons.accessibility),
+              title: const Text("Accesibilidad"),
+              subtitle: const Text("Texto grande, alto contraste..."),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: const Text("Idioma"),
+              subtitle: const Text("Español (ES)"),
+              onTap: () {},
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 
