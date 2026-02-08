@@ -16,111 +16,56 @@ class HomeScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.green[800]!, Colors.green[50]!],
+            colors: [Colors.green[800]!, Colors.white],
           ),
         ),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Semantics(
-                label: "Cabecera de usuario",
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Hola, Explorador", 
-                        style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-                      Text("Nivel: ${poiProvider.points > 500 ? 'Guardián de la Isla' : 'Eco-Viajero'}", 
-                        style: const TextStyle(color: Colors.white70, fontSize: 18)),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Tarjeta de Puntos
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Semantics(
-                  label: "Puntuación actual",
-                  value: "${poiProvider.points} Eco-Puntos acumulados",
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("${poiProvider.points}", 
-                                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.green[800])),
-                              const Text("Eco-Puntos acumulados", style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
-                          Icon(Icons.eco, size: 50, color: Colors.green[400], semanticLabel: "Icono de sostenibilidad"),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-              
+              _buildTopBar(poiProvider),
+              _buildIslandProgress(poiProvider),
+              const SizedBox(height: 20),
               Expanded(
                 child: Container(
-                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                   ),
-                  child: ListView(
-                    padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Semantics(
-                        header: true,
-                        child: const Text("¿Qué quieres hacer hoy?", 
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      _actionCard(
-                        context,
-                        "Explorar el Mapa",
-                        "Encuentra puntos de interés y rutas en tiempo real.",
-                        Icons.map,
-                        Colors.blue,
-                        () => Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen())),
-                      ),
-                      
-                      _actionCard(
-                        context,
-                        "Ruta Recomendada",
-                        poiProvider.recommendation != null 
-                          ? "Hoy: ${poiProvider.recommendation!['poi']['name']} (${poiProvider.recommendation!['poi']['saturation']})"
-                          : "Calculando mejor ruta...",
-                        Icons.auto_awesome,
-                        Colors.orange,
-                        () {
-                          if (poiProvider.recommendation != null) {
-                            // En una versión completa aquí navegaríamos centrando el mapa
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen()));
-                          }
-                        },
-                      ),
-
-                      const SizedBox(height: 20),
-                      Semantics(
-                        label: "Información de impacto ambiental",
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      const Text("MISIONES ACTIVAS", 
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ListView(
                           children: [
-                            const Text("Tu impacto", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 10),
-                            Text("Has ayudado a reducir la presión turística en un 12% este mes visitando zonas alternativas.",
-                              style: TextStyle(color: Colors.grey[600], height: 1.4)),
+                            _buildQuestCard(
+                              "El Primer Paso",
+                              "Explora el mapa y limpia tu primera zona.",
+                              poiProvider.discoveredMunicipios.length > 1 ? 1.0 : 0.5,
+                              Icons.map,
+                            ),
+                            _buildQuestCard(
+                              "Cazador de Historia",
+                              "Captura tu primer Bien de Interés Cultural.",
+                              poiProvider.visits.any((v) => v.poi.type == "BIC") ? 1.0 : 0.0,
+                              Icons.account_balance,
+                            ),
+                            _buildQuestCard(
+                              "Influencer Sostenible",
+                              "Comparte una captura en tus grupos.",
+                              0.0, // Simulado
+                              Icons.share,
+                            ),
+                            _buildQuestCard(
+                              "Dominio del Norte",
+                              "Desbloquea 5 municipios del norte.",
+                              (poiProvider.discoveredMunicipios.length / 5).clamp(0.0, 1.0),
+                              Icons.terrain,
+                            ),
                           ],
                         ),
                       ),
@@ -135,23 +80,79 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _actionCard(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
-    return Semantics(
-      button: true,
-      label: "Botón: $title. $subtitle",
-      onTapHint: "Abrir $title",
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          leading: CircleAvatar(
-            backgroundColor: color.withOpacity(0.1),
-            child: Icon(icon, color: color, semanticLabel: ""), // Hide redundant icon
+  Widget _buildTopBar(POIProvider provider) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("TENERIFE QUEST", 
+                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
+              Text("Nivel: ${provider.points > 500 ? 'Guardián' : 'Explorador'}", 
+                style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            ],
           ),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(subtitle),
-          trailing: const Icon(Icons.chevron_right, semanticLabel: "Ir"),
-          onTap: onTap,
+          const CircleAvatar(backgroundColor: Colors.white24, child: Icon(Icons.notifications_none, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIslandProgress(POIProvider provider) {
+    double progress = provider.discoveredMunicipios.length / 31;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Progreso de Conquista", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text("${(progress * 100).toStringAsFixed(0)}%", style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.white24,
+            color: Colors.lightGreenAccent,
+            minHeight: 10,
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestCard(String title, String subtitle, double progress, IconData icon) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: progress == 1.0 ? Colors.green[100] : Colors.grey[100],
+              child: Icon(icon, color: progress == 1.0 ? Colors.green : Colors.grey),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: progress, minHeight: 4, borderRadius: BorderRadius.circular(2)),
+                ],
+              ),
+            ),
+            if (progress == 1.0) const Icon(Icons.check_circle, color: Colors.green),
+          ],
         ),
       ),
     );

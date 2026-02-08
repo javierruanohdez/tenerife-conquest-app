@@ -8,11 +8,9 @@ import '../models/bic.dart';
 
 class ApiService {
   String get baseUrl {
-    // Tu IP local detectada para que el móvil real vea al PC
-    const String localIp = "192.168.1.145";
+    // Si estamos en Web, usamos localhost. Si no, la IP de red.
+    const String localIp = kIsWeb ? "127.0.0.1" : "192.168.1.145";
     const String port = "3000";
-
-    // Para desarrollo, usamos la misma IP en Web, Android e iOS
     return "http://$localIp:$port/api";
   }
 
@@ -46,24 +44,35 @@ class ApiService {
     }
   }
 
-  Future<List<BIC>> fetchBICs() async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/bics'));
-      if (response.statusCode == 200) {
-        List<dynamic> body = json.decode(response.body);
-        return body.map((dynamic item) => BIC.fromJson(item)).toList();
-      } else {
-        throw "Error fetching BICs";
-      }
-    } catch (e) {
-      print(e);
-      return [];
-    }
-  }
-
-    Future<List<dynamic>> fetchBordersRaw() async {
-
+    Future<List<BIC>> fetchBICs() async {
       try {
+        final response = await http.get(Uri.parse('$baseUrl/bics'));
+        if (response.statusCode == 200) {
+          List<dynamic> body = json.decode(response.body);
+          return body.map((dynamic item) => BIC.fromJson(item)).toList();
+        } else {
+          throw "Error fetching BICs";
+        }
+      } catch (e) {
+        print(e);
+        return [];
+      }
+    }
+  
+    Future<List<dynamic>> fetchEntornosRaw() async {
+      try {
+        final response = await http.get(Uri.parse('$baseUrl/entornos'));
+        if (response.statusCode == 200) {
+          return (json.decode(response.body)['features'] as List);
+        }
+        return [];
+      } catch (e) {
+        return [];
+      }
+    }
+  
+    Future<List<dynamic>> fetchBordersRaw() async {
+        try {
 
         final response = await http.get(Uri.parse('$baseUrl/borders'));
 
@@ -133,7 +142,31 @@ class ApiService {
 
   
 
-      Future<bool> sendReport(int poiId, String type, String comment) async {
+      Future<List<dynamic>> fetchWeather() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/weather'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchStationSensors(int stationId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/weather/station/$stationId'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> sendReport(int poiId, String type, String comment) async {
 
   
 

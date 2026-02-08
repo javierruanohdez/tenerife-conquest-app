@@ -1,44 +1,40 @@
-# Memoria Técnica: Tenerife Eco-Explora
+# Memoria Técnica: Tenerife Quest
 ## II Concurso Datos Abiertos: Desarrollo de APP - Cabildo de Tenerife
 
 ### 1. Resumen Ejecutivo
-"Tenerife Eco-Explora" es una solución móvil multiplataforma orientada a la sostenibilidad turística. Utiliza la gamificación para resolver el problema de la saturación en puntos de interés (POIs) icónicos de Tenerife, redirigiendo el flujo de visitantes hacia zonas menos concurridas y promoviendo el patrimonio cultural (BICs) y natural de la isla.
+**Tenerife Quest** es una solución móvil multiplataforma diseñada para revolucionar la forma en que ciudadanos y turistas exploran la isla de Tenerife. Mediante técnicas de gamificación (como la "Niebla de Guerra" y un sistema de "Conquistas"), la aplicación incentiva el descubrimiento del patrimonio cultural y natural, utilizando exclusivamente conjuntos de datos abiertos del Cabildo de Tenerife. El objetivo es promover un turismo sostenible, responsable y tecnológicamente avanzado.
 
 ### 2. Arquitectura de Datos e Integración (ETL)
 Como proyecto de ingeniería de datos, se ha implementado un flujo de procesamiento que garantiza la integridad y eficiencia de la información proveniente de `datos.tenerife.es`:
 
-*   **Extracción y Normalización:** Se han integrado cuatro datasets principales:
-    1.  **Puntos de Interés (GeoJSON):** Fuente primaria para la ubicación de áreas recreativas y miradores.
-    2.  **Itinerarios de la Isla (CSV):** Datos sobre senderos oficiales, incluyendo dificultad, distancia y tipo de ruta.
-    3.  **Bienes de Interés Cultural - BIC (CSV):** Información sobre el patrimonio histórico.
-    4.  **Límites Municipales (GeoJSON):** Utilizados para el filtrado espacial y la asignación de contextos administrativos a los POIs.
-*   **Procesamiento Backend (Node.js):** Se ha desarrollado un middleware que actúa como capa de limpieza. Dado que algunos datasets originales carecen de coordenadas precisas (como los BICs), el backend realiza un cruce de datos basado en el nombre del municipio y la proximidad a senderos conocidos para enriquecer la experiencia del usuario.
-*   **Algoritmo de Saturación Dinámica:** Para la demo, se ha implementado un generador de estados de saturación que simula la carga turística en tiempo real, permitiendo al sistema de recompensas (Eco-Puntos) asignar mayores incentivos a las zonas con "Baja" ocupación.
+*   **Fuentes de Datos:** Se han integrado y normalizado cuatro datasets principales:
+    1.  **Puntos de Interés (GeoJSON):** Localización y detalles de áreas recreativas, miradores y patrimonio.
+    2.  **Itinerarios de la Isla (CSV):** Información técnica sobre senderos (distancia, dificultad, municipios).
+    3.  **Bienes de Interés Cultural - BIC (CSV):** Catálogo del patrimonio histórico insular.
+    4.  **Límites Municipales (GeoJSON):** Para la zonificación y el geofencing del mapa.
+*   **Procesamiento Backend (Node.js):** Se ha desarrollado una API REST que actúa como capa de enriquecimiento. El backend realiza cruces espaciales para vincular BICs con senderos cercanos, permitiendo un motor de recomendación que sugiere rutas basadas en la riqueza patrimonial y la baja saturación.
 
-### 3. Innovación y Gamificación
-La aplicación introduce dos conceptos disruptivos:
-*   **Niebla de Guerra (Fog of War):** Inspirado en videojuegos, el mapa de Tenerife aparece inicialmente oculto por una capa de niebla. Los usuarios "desbloquean" la geografía de la isla realizando visitas físicas reales (validación mediante GPS a menos de 500m).
-*   **Eco-Puntos:** Un sistema de fidelización donde el usuario sube de nivel (de "Eco-Viajero" a "Guardián de la Isla"). Los puntos son inversamente proporcionales a la saturación del sitio visitado, incentivando el descubrimiento de "joyas ocultas" de la isla.
+### 3. Innovación y Experiencia de Usuario (UX)
+*   **Niebla de Guerra:** El mapa de Tenerife se descubre dinámicamente a medida que el usuario visita físicamente los lugares, fomentando la exploración real.
+*   **Sistema de Conquistas:** Cada visita se registra en un historial personal con fecha y soporte visual, permitiendo generar tarjetas de compartir personalizadas (**Captura Tenerife**) para redes sociales.
+*   **Dashboard Estadístico:** Integración de análisis de datos mediante gráficos dinámicos que muestran la distribución de la exploración del usuario por categorías de patrimonio.
 
 ### 4. Accesibilidad Universal (Cumplimiento RD 1112/2018)
-Este es el pilar central del desarrollo, garantizando que cualquier ciudadano pueda usar la app:
-*   **Semántica Completa:** Todos los elementos interactivos cuentan con `Semantics` de Flutter, proporcionando descripciones claras para TalkBack y VoiceOver.
-*   **Contraste y Color:** Se ha utilizado una paleta basada en Material Design 3 con ratios de contraste superiores a 4.5:1 para texto normal, cumpliendo con WCAG 2.1 AA.
-*   **Navegación Adaptativa:** La interfaz permite el escalado de fuentes sin romper el diseño (text scaling support) y ofrece áreas de pulsación mínimas de 48x48dp.
-*   **Jerarquía de Información:** Uso de encabezados semánticos para que los usuarios de lectores de pantalla puedan saltar rápidamente entre secciones de la app.
+La aplicación garantiza la inclusión total:
+*   **Semántica Completa:** Uso de etiquetas `Semantics` de Flutter para compatibilidad total con TalkBack (Android) y VoiceOver (iOS).
+*   **Contraste y Diseño:** Paleta de colores validada para alta legibilidad y soporte para escalado de texto dinámico.
+*   **Navegación Intuitiva:** Interfaz moderna basada en menús inferiores, optimizada para el uso con una sola mano.
 
 ### 5. Sostenibilidad y Tecnologías Abiertas
-*   **Tecnología:** Flutter 3.10+ para garantizar un código base único para APK (Android) e IPA (iOS).
-*   **Licenciamiento:** El código se entrega bajo **EUPL v1.2**, promoviendo la soberanía tecnológica y la reutilización por parte del Cabildo.
-*   **Mantenibilidad:** Arquitectura basada en el patrón de diseño "Provider", separando la lógica de negocio (servicios y proveedores) de la capa de presentación (screens).
+*   **Tecnología:** Flutter para un despliegue nativo multiplataforma.
+*   **Licenciamiento:** El código se entrega bajo la **European Union Public Licence (EUPL) v1.2**.
+*   **Ciencia Ciudadana:** Módulo integrado para que los usuarios reporten incidencias en tiempo real, devolviendo datos valiosos al Cabildo para el mantenimiento del entorno.
 
 ### 6. Manual de Instalación y Ejecución
-Para compilar los entregables obligatorios:
-1.  **Android:** `flutter build apk --release` (Genera el APK).
-2.  **iOS:** `flutter build ipa` (Requiere macOS para generar el fichero IPA).
-3.  **Servidor:** `cd backend && npm install && node index.js`.
+1.  **Servidor:** `cd backend && npm install && node index.js`
+2.  **App:** `cd frontend && flutter pub get && flutter build apk --debug`
 
 ---
-**Autor:** Estudiante de Ciencia e Ingeniería de Datos, ULPGC.
-**Licencia:** European Union Public Licence v1.2.
-**Datasets:** Portal de Datos Abiertos del Cabildo de Tenerife.
+**Autores:** Yone Suárez, Lucas Mendoza y Javier Ruano.
+**Institución:** Estudiantes de Ciencia e Ingeniería de Datos, ULPGC.
+**Licencia:** EUPL v1.2.
