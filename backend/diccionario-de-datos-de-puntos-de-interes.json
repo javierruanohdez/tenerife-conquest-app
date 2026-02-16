@@ -1,0 +1,52 @@
+{
+  "@context": "http://www.w3.org/ns/csvw",
+  "@type": "Table",
+  "dc:description": "Diccionario de datos",
+  "dc:creator": "Servicio Técnico de Planificación y Proyectos Forestales. Unidad Orgánica de Uso Público y Recursos Informáticos",
+  "tableSchema": {
+    "columns": [
+      {
+        "name": "punto_interes_nombre",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Nombre del punto de interés"
+      },
+      {
+        "name": "punto_interes_tipo",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Tipo del punto de interés. Valores: árbol monumental, BIC (Bien de Interés Cultural), playa…"
+      },
+      {
+        "name": "punto_interes_subtipo",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Subtipo del punto de interés. Valores: artístico, monumento, etnográfico…"
+      },
+      {
+        "name": "punto_interes_descripcion",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Descripción del punto de interés."
+      },
+      {
+        "name": "espacio_natural_nombre",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Nombre del espacio natural protegido en el que está ubicado el punto de interés"
+      },
+      {
+        "name": "latitud",
+        "datatype": "numeric",
+        "title": "",
+        "dc:description": "Coordenada geográfica del punto de interés. Latitud en grados decimales"
+      },
+      {
+        "name": "longitud",
+        "datatype": "numeric",
+        "title": "",
+        "dc:description": "Coordenada geográfica del punto de interés. Longitud en grados decimales"
+      }
+    ]
+  }
+}
