@@ -20,6 +20,8 @@ let realWeatherStations = [];
 
 const CABILDO_METEO_API = "https://datos.tenerife.es/api/meteo/latest";
 
+// --- UTILIDADES ---
+
 function cleanName(name) {
   if (!name) return "TENERIFE";
   let n = name.toString().toUpperCase().trim();
@@ -34,63 +36,86 @@ function normalizeKey(key) {
   return key.toString().toUpperCase().replace(/[^A-Z0-9]/g, '').trim();
 }
 
+// --- LÓGICA METEOROLÓGICA (MODIFICADA SEGÚN TU PYTHON) ---
+
 async function fetchRealWeather() {
   try {
     const response = await axios.get(`${CABILDO_METEO_API}/stations`, { timeout: 8000 });
-    let data = response.data;
-    if (data && !Array.isArray(data)) data = data.stations || data.data || [];
+    let data = response.data?.stations || response.data || [];
+    
     if (Array.isArray(data)) {
       realWeatherStations = data.map(st => ({
         id: st.id_weatherstation,
         name: st.name || "Estación Meteorológica",
-        municipio: st.municipality || "Tenerife",
+        municipio: st.municipality_name || st.municipality || "Tenerife",
         lat: parseFloat(st.latitude),
         lng: parseFloat(st.longitude),
         alt: st.altitude,
-        temp: 18 + Math.random() * 5,
+        sensors_count: st.sensors_count || 0,
         status: "Online"
       })).filter(st => !isNaN(st.lat) && !isNaN(st.lng));
-      console.log(`[SUCCESS] ${realWeatherStations.length} Estaciones oficiales cargadas.`);
+      console.log(`[METEO] ${realWeatherStations.length} Estaciones actualizadas.`);
     }
   } catch (error) {
-    realWeatherStations = [
-        { id: 1, name: "Santa Cruz - Centro", lat: 28.46, lng: -16.25, temp: 22, status: "Operativa" },
-        { id: 2, name: "Izaña", lat: 28.30, lng: -16.50, temp: 11, status: "Viento" }
-    ];
+    console.error("[METEO ERROR] Fallo al actualizar lista:", error.message);
+    if (realWeatherStations.length === 0) {
+        realWeatherStations = [
+            { id: 1, name: "Santa Cruz - Centro", lat: 28.46, lng: -16.25, status: "Offline" },
+            { id: 2, name: "Izaña", lat: 28.30, lng: -16.50, status: "Offline" }
+        ];
+    }
   }
 }
 
 app.get('/api/weather/station/:id', async (req, res) => {
   const stationId = req.params.id;
-  const today = new Date().toISOString().split('T')[0];
+  
+  // Rango de fechas como en Python (2 días atrás hasta mañana)
+  const now = new Date();
+  const dateTo = new Date(now.getTime() + (24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+  const dateFrom = new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
   try {
     const stationResp = await axios.get(`${CABILDO_METEO_API}/stations/${stationId}/sensors`);
-    let rawSensors = [];
-    if (stationResp.data && stationResp.data.stations && stationResp.data.stations.length > 0) {
-      rawSensors = stationResp.data.stations[0].sensors || [];
-    }
+    const rawSensors = stationResp.data?.stations?.[0]?.sensors || [];
+
     const sensorData = await Promise.all(rawSensors.map(async (s) => {
       try {
         const sid = s.id_weatherstationsensor;
-        const readingsUrl = `${CABILDO_METEO_API}/readings/station/${stationId}/sensor/${sid}/from/${today}/to/${today}/1`;
+        const readingsUrl = `${CABILDO_METEO_API}/readings/station/${stationId}/sensor/${sid}/from/${dateFrom}/to/${dateTo}/1`;
         const rResp = await axios.get(readingsUrl, { timeout: 4000 });
-        let val = "---";
-        if (rResp.data && rResp.data.readings && rResp.data.readings.sensors && rResp.data.readings.sensors.length > 0) {
-          const sensorReadings = rResp.data.readings.sensors[0].values;
-          if (sensorReadings && sensorReadings.length > 0) {
-            val = sensorReadings[sensorReadings.length - 1].observation_value;
-          }
+        const values = rResp.data?.readings?.sensors?.[0]?.values || [];
+
+        let lastValue = "---";
+        let lastDate = "";
+
+        if (values.length > 0) {
+          // Lógica max() de Python por observation_date
+          const latest = values.reduce((prev, curr) => 
+            (new Date(prev.observation_date) > new Date(curr.observation_date)) ? prev : curr
+          );
+          lastValue = latest.observation_value;
+          lastDate = latest.observation_date;
         }
-        return { name: s.sensor_name, unit: s.unit || "", value: val, alias: s.sensor_alias };
+
+        return {
+          name: s.sensor_name,
+          alias: s.sensor_alias,
+          unit: s.unit || "",
+          value: lastValue,
+          observation_date: lastDate
+        };
       } catch (err) {
-        return { name: s.sensor_name, unit: s.unit, value: "N/A", alias: s.sensor_alias };
+        return { name: s.sensor_name, alias: s.sensor_alias, unit: s.unit, value: "N/A", observation_date: "" };
       }
     }));
     res.json({ id: stationId, sensors: sensorData });
   } catch (e) {
-    res.status(500).json({ error: "Error obteniendo datos." });
+    res.status(500).json({ error: "Error obteniendo datos de sensores." });
   }
 });
+
+// --- CARGA DE DATOS GEOGRÁFICOS (MANTENIDO) ---
 
 function loadPOIs() {
   try {
@@ -204,13 +229,26 @@ async function loadItinerarios() {
   } catch (err) { console.error("[ERROR] loadItinerarios:", err.message); }
 }
 
+// --- INICIALIZACIÓN ---
+
 async function init() {
-  loadPOIs(); loadBICs(); loadMuniBorders(); 
+  loadPOIs(); 
+  loadBICs(); 
+  loadMuniBorders(); 
   await loadItinerarios();
+  
+  // Carga inicial de estaciones
   await fetchRealWeather();
-  app.listen(port, '0.0.0.0', () => console.log(`TENERIFE QUEST API v5.0 - Ready`));
+  
+  // Auto-actualización cada 15 minutos (900.000 ms)
+  setInterval(fetchRealWeather, 15 * 60 * 1000);
+
+  app.listen(port, '0.0.0.0', () => console.log(`TENERIFE QUEST API v5.2 - Live & Auto-refresh (15min)`));
 }
+
 init();
+
+// --- ENDPOINTS REST ---
 
 app.get('/api/pois', (req, res) => res.json(pois));
 app.get('/api/itinerarios', (req, res) => res.json(itinerarios));
