@@ -8,10 +8,7 @@ import '../models/bic.dart';
 
 class ApiService {
   String get baseUrl {
-    // Si estamos en Web, usamos localhost. Si no, la IP de red.
-    const String localIp = kIsWeb ? "127.0.0.1" : "192.168.1.145";
-    const String port = "3000";
-    return "http://$localIp:$port/api";
+    return "https://tenerife-conquest-app.onrender.com/api";
   }
 
   Future<List<POI>> fetchPOIs() async {
