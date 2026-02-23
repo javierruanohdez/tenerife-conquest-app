@@ -52,7 +52,7 @@ async function fetchRealWeather() {
         lng: parseFloat(st.longitude),
         alt: st.altitude,
         sensors_count: st.sensors_count || 0,
-        temp: Math.random() < 0.3 ? (36 + Math.random() * 5) : (15 + Math.random() * 20), // 30% chance of extreme heat (>35C)
+        temp: 22.0, // Fixed temperature to avoid simulated alerts
         status: "Online"
       })).filter(st => !isNaN(st.lat) && !isNaN(st.lng));
       console.log(`[METEO] ${realWeatherStations.length} Estaciones actualizadas.`);

@@ -19,6 +19,7 @@ class _MapScreenState extends State<MapScreen> {
   bool _showBICs = true;
   bool _showNature = true;
   bool _showFog = true;
+  bool _showWeather = true;
 
   bool _guayotaAlertShown = false; // Flag para controlar si la alerta ya se mostró en esta sesión
 
@@ -197,14 +198,15 @@ class _MapScreenState extends State<MapScreen> {
                         child: _buildMarkerIcon(Icons.account_balance, Colors.amber[800]!),
                       ),
                     )),
-                  ...poiProvider.weatherStations.map((st) => Marker(
-                    point: LatLng((st['lat'] as num).toDouble(), (st['lng'] as num).toDouble()),
-                    width: 35, height: 35,
-                    child: GestureDetector(
-                      onTap: () => _showWeatherSheet(st),
-                      child: _buildMarkerIcon(Icons.thermostat, Colors.blue[800]!),
-                    ),
-                  )),
+                  if (_showWeather)
+                    ...poiProvider.weatherStations.map((st) => Marker(
+                      point: LatLng((st['lat'] as num).toDouble(), (st['lng'] as num).toDouble()),
+                      width: 35, height: 35,
+                      child: GestureDetector(
+                        onTap: () => _showWeatherSheet(st),
+                        child: _buildMarkerIcon(Icons.thermostat, Colors.blue[800]!),
+                      ),
+                    )),
                   if (poiProvider.showAllTrails)
                     ...poiProvider.itineraries.where((it) => it.startPoint != null).map((it) {
                       final colorStr = it.difficultyColor.replaceFirst('#', '0xFF');
@@ -267,6 +269,8 @@ class _MapScreenState extends State<MapScreen> {
                                     children: [
                                       _filterChip("Niebla", _showFog, (v) => setState(() => _showFog = v), Icons.cloud),
                                       const SizedBox(width: 8),
+                                      _filterChip("Meteorología", _showWeather, (v) => setState(() => _showWeather = v), Icons.thermostat),
+                                      const SizedBox(width: 8),
                                       _filterChip("Naturaleza", _showNature, (v) => setState(() => _showNature = v), Icons.forest),
                                       const SizedBox(width: 8),
                                       _filterChip("Cultura", _showBICs, (v) => setState(() => _showBICs = v), Icons.account_balance),
@@ -291,25 +295,12 @@ class _MapScreenState extends State<MapScreen> {
                   _mapController.move(LatLng(poiProvider.currentPosition!.latitude, poiProvider.currentPosition!.longitude), 14.0);
                 }
               },
-              child: const Icon(Icons.my_location),
-            ),
-            const SizedBox(height: 10),
-            FloatingActionButton(
-              heroTag: 'teleport_btn',
-              mini: true,
-              backgroundColor: Colors.brown,
-              onPressed: () {
-                final newPos = poiProvider.teleportToRandomMunicipality();
-                if (newPos != null) {
-                  _mapController.move(newPos, 13.0);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Has viajado a un nuevo territorio!")));
-                }
-              },
-              child: const Icon(Icons.explore),
-            ),
-          ],
-        ),
-      ),
+                          child: const Icon(Icons.my_location),
+                        ),
+                      ],
+                    ),
+                  ),
+              
     );
   }
 
@@ -511,16 +502,6 @@ class _MapScreenState extends State<MapScreen> {
                   if (artifact != null) _showArtifactDialog(artifact);
                 } : null,
               ),
-              const SizedBox(height: 12),
-              TextButton.icon(
-                icon: const Icon(Icons.bug_report),
-                label: const Text("RITUAL DE PRUEBA (DEMO)"),
-                onPressed: () {
-                  final artifact = provider.forceCheckIn(poi);
-                  Navigator.pop(context);
-                  if (artifact != null) _showArtifactDialog(artifact);
-                },
-              ),
             ],
           ),
         ),
@@ -579,16 +560,6 @@ class _MapScreenState extends State<MapScreen> {
                   Navigator.pop(context);
                   if (artifact != null) _showArtifactDialog(artifact);
                 } : null,
-              ),
-              const SizedBox(height: 12),
-              TextButton.icon(
-                icon: const Icon(Icons.bug_report),
-                label: const Text("RITUAL DE PRUEBA (DEMO)"),
-                onPressed: () {
-                  final artifact = provider.forceCheckIn(bic);
-                  Navigator.pop(context);
-                  if (artifact != null) _showArtifactDialog(artifact);
-                },
               ),
             ],
           ),

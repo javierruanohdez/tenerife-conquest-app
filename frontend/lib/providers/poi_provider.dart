@@ -90,19 +90,8 @@ class POIProvider with ChangeNotifier {
   List<MuniBorder> _borders = [];
   List<dynamic> _weatherStations = [];
   Set<int> _discoveredPoiIds = {};
-  Set<String> _discoveredMunicipios = {"LA OROTAVA", "ICOD DE LOS VINOS", "SANTA CRUZ DE TENERIFE"}; 
-  List<Visit> _visits = [
-    Visit(
-      poi: POI(id: 999, name: "Gran Drago Milenario", lat: 28.366, lng: -16.722, type: "Natural", saturation: "low", description: "Árbol milenario símbolo de la isla.", enp: "", municipio: "ICOD DE LOS VINOS", touristPressure: 0),
-      date: DateTime.now(),
-      photoUrl: "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"
-    ),
-    Visit(
-      poi: POI(id: 998, name: "Pico del Teide", lat: 28.272, lng: -16.642, type: "Natural", saturation: "high", description: "El techo de España.", enp: "Parque Nacional del Teide", municipio: "LA OROTAVA", touristPressure: 0),
-      date: DateTime.now(),
-      photoUrl: "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"
-    ),
-  ];
+  Set<String> _discoveredMunicipios = {}; 
+  List<Visit> _visits = [];
   List<Artifact> _inventory = [
     Artifact(name: "Gánigo de Barro", description: "Vasija ancestral usada para ofrendas a los dioses y guardar leche de cabra.", icon: Icons.local_dining, color: Colors.brown),
     Artifact(name: "Tabona de Obsidiana", description: "Piedra volcánica negra tallada para ser usada como cuchillo de gran precisión.", icon: Icons.architecture, color: Colors.grey),
@@ -367,17 +356,12 @@ class POIProvider with ChangeNotifier {
   void _filterPois() {
     _filteredPois = _allPois.where((p) {
       final bool matchesEspacio = _selectedEspacio == "Todos" || p.enp.contains(_selectedEspacio);
-      final bool isDiscovered = _discoveredMunicipios.contains(p.municipio.toUpperCase().trim());
-      return matchesEspacio && isDiscovered;
+      return matchesEspacio;
     }).toList();
   }
 
   void _filterBics() {
-    _filteredBics = _bics.where((b) {
-      final bool matchesEspacio = _selectedEspacio == "Todos" || _selectedEspacio.contains(b.municipio);
-      final bool isDiscovered = _discoveredMunicipios.contains(b.municipio.toUpperCase().trim());
-      return matchesEspacio && isDiscovered;
-    }).toList();
+    _filteredBics = _bics; // BICs are always visible if the 'Cultura' toggle is on
   }
 
   void updateLocation(Position position) {
