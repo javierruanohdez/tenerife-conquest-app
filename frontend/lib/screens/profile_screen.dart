@@ -50,17 +50,17 @@ class ProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("LOGROS DE LEYENDA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.brown)),
+          const Text("LOGROS DE LEYENDA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.brown)),
           const SizedBox(height: 12),
           SizedBox(
-            height: 100,
+            height: 140,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: badges.length,
               itemBuilder: (context, index) {
                 final badge = badges[index];
                 return Container(
-                  width: 80,
+                  width: 110,
                   margin: const EdgeInsets.only(right: 12),
                   child: Column(
                     children: [
@@ -81,7 +81,7 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(badge.name, 
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 8, fontWeight: badge.isUnlocked ? FontWeight.bold : FontWeight.normal, color: badge.isUnlocked ? Colors.black : Colors.grey),
+                        style: TextStyle(fontSize: 10, fontWeight: badge.isUnlocked ? FontWeight.bold : FontWeight.normal, color: badge.isUnlocked ? Colors.black : Colors.grey),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -104,31 +104,31 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.backpack, color: Colors.brown[600], size: 18),
+              Icon(Icons.backpack, color: Colors.brown[600], size: 16),
               const SizedBox(width: 8),
-              const Text("BOLSA DE GUERRERO", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.brown)),
+              const Text("BOLSA DE GUERRERO", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.brown)),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF4E1C1), // Color pergamino/piel curtida
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.brown.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4)),
+                BoxShadow(color: Colors.brown.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
               ],
-              border: Border.all(color: Colors.brown[300]!, width: 2),
+              border: Border.all(color: Colors.brown[300]!, width: 1.5),
             ),
             child: provider.inventory.isEmpty
                 ? const Center(
                     child: Column(
                       children: [
-                        Icon(Icons.inventory_2_outlined, color: Colors.brown, size: 40),
-                        SizedBox(height: 10),
-                        Text("Tu bolsa está vacía.\nExplora sitios sagrados para encontrar tesoros.", 
+                        Icon(Icons.inventory_2_outlined, color: Colors.brown, size: 30),
+                        SizedBox(height: 6),
+                        Text("Tu bolsa está vacía.", 
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Colors.brown, fontStyle: FontStyle.italic)),
+                          style: TextStyle(fontSize: 10, color: Colors.brown, fontStyle: FontStyle.italic)),
                       ],
                     ),
                   )
@@ -136,9 +136,9 @@ class ProfileScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 15,
-                      crossAxisSpacing: 15,
+                      crossAxisCount: 8,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
                     ),
                     itemCount: provider.inventory.length,
                     itemBuilder: (context, index) {
@@ -149,9 +149,9 @@ class ProfileScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.brown[900]!.withOpacity(0.1),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.brown[400]!.withOpacity(0.5)),
+                            border: Border.all(color: Colors.brown[400]!.withOpacity(0.3)),
                           ),
-                          child: Icon(item.icon, color: Colors.brown[800], size: 28),
+                          child: Icon(item.icon, color: Colors.brown[800], size: 20),
                         ),
                       );
                     },

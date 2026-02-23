@@ -40,7 +40,7 @@ class MissionsScreen extends StatelessWidget {
       Mission(
         id: "2",
         title: "Legado de los Menceyes",
-        description: "Honra a tus ancestros en 3 BICs sagrados.",
+        description: "Honra a tus ancestros en 3 bienes de interés cultural sagrados.",
         xpReward: 300,
         icon: Icons.history_edu,
         progress: (provider.visits.where((v) => v.poi.type == "BIC").length / 3).clamp(0.0, 1.0),
