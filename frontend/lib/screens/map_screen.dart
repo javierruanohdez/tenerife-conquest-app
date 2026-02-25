@@ -10,6 +10,8 @@ import '../models/bic.dart';
 import '../models/itinerary.dart';
 
 class MapScreen extends StatefulWidget {
+  const MapScreen({super.key});
+
   @override
   _MapScreenState createState() => _MapScreenState();
 }

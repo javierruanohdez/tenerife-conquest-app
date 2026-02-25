@@ -89,10 +89,10 @@ class POIProvider with ChangeNotifier {
   List<BIC> _filteredBics = [];
   List<MuniBorder> _borders = [];
   List<dynamic> _weatherStations = [];
-  Set<int> _discoveredPoiIds = {};
-  Set<String> _discoveredMunicipios = {}; 
-  List<Visit> _visits = [];
-  List<Artifact> _inventory = [
+  final Set<int> _discoveredPoiIds = {};
+  final Set<String> _discoveredMunicipios = {}; 
+  final List<Visit> _visits = [];
+  final List<Artifact> _inventory = [
     Artifact(name: "Gánigo de Barro", description: "Vasija ancestral usada para ofrendas a los dioses y guardar leche de cabra.", icon: Icons.local_dining, color: Colors.brown),
     Artifact(name: "Tabona de Obsidiana", description: "Piedra volcánica negra tallada para ser usada como cuchillo de gran precisión.", icon: Icons.architecture, color: Colors.grey),
   ];
@@ -227,8 +227,9 @@ class POIProvider with ChangeNotifier {
       if (st['temp'] == null) continue;
       final String muni = (st['municipio'] ?? "").toString().toUpperCase().trim();
       final double temp = (st['temp'] as num).toDouble();
-      if (temp > 35) dynamicAlerts[muni] = "LA IRA DE GUAYOTA (CALOR EXTREMO: ${temp.toStringAsFixed(1)}°C)";
-      else if (temp < 5) dynamicAlerts[muni] = "SUSURRO DE IZAÑA (FRÍO INTENSO: ${temp.toStringAsFixed(1)}°C)";
+      if (temp > 35) {
+        dynamicAlerts[muni] = "LA IRA DE GUAYOTA (CALOR EXTREMO: ${temp.toStringAsFixed(1)}°C)";
+      } else if (temp < 5) dynamicAlerts[muni] = "SUSURRO DE IZAÑA (FRÍO INTENSO: ${temp.toStringAsFixed(1)}°C)";
     }
     return dynamicAlerts;
   }

@@ -682,7 +682,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(width: 16),
                     Column(
                       children: [
-                        Text("${discoveredMunis.length}/${totalMunis}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.brown)),
+                        Text("${discoveredMunis.length}/$totalMunis", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.brown)),
                         const Text("Menceyatos", style: TextStyle(fontSize: 12, color: Colors.brown)),
                         const SizedBox(height: 8),
                         SizedBox(
