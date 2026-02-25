@@ -63,7 +63,7 @@ class _ConquestScreenState extends State<ConquestScreen> {
 
     
 
-        await Share.shareXFiles([XFile(imagePath.path)], text: '¡Acabo de conquistar ${visit.poi.name} con #TenerifeQuest! 🌿🎮');
+        await Share.shareXFiles([XFile(imagePath.path)], text: '¡Acabo de visitar ${visit.poi.name} con #ConquistaTenerife! 🌿🎮');
 
       }
 
@@ -103,9 +103,9 @@ class _ConquestScreenState extends State<ConquestScreen> {
 
                     children: [
 
-                      Text("TENERIFE", style: TextStyle(color: Colors.white, letterSpacing: 5, fontWeight: FontWeight.bold)),
+                      Text("CONQUISTA", style: TextStyle(color: Colors.white, letterSpacing: 5, fontWeight: FontWeight.bold)),
 
-                      Text("QUEST", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 22)),
+                      Text("TENERIFE", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 22)),
 
                     ],
 

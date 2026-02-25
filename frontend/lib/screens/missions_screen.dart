@@ -105,7 +105,7 @@ class MissionsScreen extends StatelessWidget {
             children: [
               Icon(Icons.stars, color: Colors.amber, size: 20),
               SizedBox(width: 8),
-              const Text("EVENTOS ANCESTRALES EN CURSO", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text("EVENTOS CURSO", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           ),
         ),

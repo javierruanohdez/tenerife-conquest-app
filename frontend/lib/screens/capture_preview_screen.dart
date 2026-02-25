@@ -38,8 +38,8 @@ class _CapturePreviewScreenState extends State<CapturePreviewScreen> {
       await imageFile.writeAsBytes(image);
 
       final text = nearest != null 
-        ? '¡Explorando ${nearest.name} en #TenerifeQuest! 🌿' 
-        : '¡Explorando Tenerife con #TenerifeQuest! 🌿';
+        ? '¡Explorando ${nearest.name} en #ConquistaTenerife! 🌿' 
+        : '¡Explorando Tenerife con #ConquistaTenerife! 🌿';
 
       await Share.shareXFiles([XFile(imageFile.path)], text: text);
     } catch (e) {

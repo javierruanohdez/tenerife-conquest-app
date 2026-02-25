@@ -49,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const Icon(Icons.eco, size: 100, color: Colors.white),
             const SizedBox(height: 24),
             const Text(
-              "TENERIFE\nQUEST",
+              "CONQUISTA\nTENERIFE",
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
@@ -80,8 +80,8 @@ class _SplashScreenState extends State<SplashScreen> {
                               const Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text("Fondo Europeo de", style: TextStyle(color: Colors.white, fontSize: 10)),
-                                  Text("Desarrollo Regional", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  Text("Solución Digital", style: TextStyle(color: Colors.white, fontSize: 10)),
+                                  Text("Impulsada por los ODS", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               const SizedBox(width: 30),

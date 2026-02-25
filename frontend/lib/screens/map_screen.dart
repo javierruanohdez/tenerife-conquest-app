@@ -107,7 +107,7 @@ class _MapScreenState extends State<MapScreen> {
             // if (hasActiveAlerts && poiProvider.activeAlerts.values.first.contains("GUAYOTA")) 
             //   Image.asset('assets/guayota.png', width: 28, height: 28),
             // const SizedBox(width: 8),
-            Text("Tenerife Quest", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+            Text("Conquista Tenerife", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
           ],
         ),
         backgroundColor: Colors.white.withOpacity(0.8),

@@ -15,7 +15,7 @@ class CabildoDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Panel de Visión Ancestral", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Panel de Visión General", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.blueGrey[800],
         foregroundColor: Colors.white,
       ),
