@@ -59,7 +59,7 @@ class MissionsScreen extends StatelessWidget {
         description: "Escucha el susurro de 5 estaciones meteorológicas.",
         xpReward: 200,
         icon: Icons.cloud_sync,
-        progress: 0.4, 
+        progress: (provider.visits.where((v) => v.poi.type == "Estación").length / 5).clamp(0.0, 1.0), 
       ),
     ];
 

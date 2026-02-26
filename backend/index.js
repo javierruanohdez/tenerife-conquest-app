@@ -211,10 +211,12 @@ async function loadItinerarios() {
         let paths = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
         const dist = parseFloat(csvMatch ? csvMatch.itinerario_distancia : gp.itinerario_distancia) || 0;
         const desnivel = parseFloat(csvMatch ? csvMatch.itinerario_desnivel_positivo : 0) || 0;
+        const clase = csvMatch ? csvMatch.itinerario_clase : (gp.itinerario_clase || "Sendero");
         return {
           id: index + 1,
           matricula: geoMatricula,
           name: gp.itinerario_nombre,
+          clase: clase,
           description: csvMatch ? `Ruta por ${csvMatch.municipios_nombres}.` : "Ruta oficial.",
           distancia: Math.round(dist),
           desnivelPos: Math.round(desnivel),

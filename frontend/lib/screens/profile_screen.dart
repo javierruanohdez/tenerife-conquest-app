@@ -116,7 +116,7 @@ class ProfileScreen extends StatelessWidget {
               color: const Color(0xFFF4E1C1), // Color pergamino/piel curtida
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.brown.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
+                BoxShadow(color: Colors.brown.withAlpha(25), blurRadius: 4, offset: const Offset(0, 2)),
               ],
               border: Border.all(color: Colors.brown[300]!, width: 1.5),
             ),
@@ -708,7 +708,7 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     _journalStatItem(Icons.nature_people, "Sitios", "${provider.visits.length}", Colors.green),
                     _journalStatItem(Icons.shield_outlined, "Artefactos", "${provider.inventory.length}", Colors.orange),
-                    _journalStatItem(Icons.hiking, "Senderos", "0 km", Colors.blue), // Placeholder
+                    _journalStatItem(Icons.hiking, "Senderos", "${(provider.totalDistance / 1000).toStringAsFixed(1)} km", Colors.blue),
                   ],
                 ),
               ],

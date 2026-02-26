@@ -92,6 +92,7 @@ class POIProvider with ChangeNotifier {
   final Set<int> _discoveredPoiIds = {};
   final Set<String> _discoveredMunicipios = {}; 
   final List<Visit> _visits = [];
+  double _totalDistance = 0.0;
   final List<Artifact> _inventory = [
     Artifact(name: "Gánigo de Barro", description: "Vasija ancestral usada para ofrendas a los dioses y guardar leche de cabra.", icon: Icons.local_dining, color: Colors.brown),
     Artifact(name: "Tabona de Obsidiana", description: "Piedra volcánica negra tallada para ser usada como cuchillo de gran precisión.", icon: Icons.architecture, color: Colors.grey),
@@ -212,6 +213,7 @@ class POIProvider with ChangeNotifier {
   Set<int> get discoveredPoiIds => _discoveredPoiIds;
   Set<String> get discoveredMunicipios => _discoveredMunicipios;
   List<Visit> get visits => _visits;
+  double get totalDistance => _totalDistance;
   Position? get currentPosition => _currentPosition;
   int get points => _points;
   String get selectedEspacio => _selectedEspacio;
@@ -240,17 +242,21 @@ class POIProvider with ChangeNotifier {
   }
 
   List<Explorer> get globalRanking {
-    int myIndex = _globalRanking.indexWhere((e) => e.isMe);
-    _globalRanking[myIndex] = Explorer(name: _userName, conquests: _visits.length, isMe: true);
     final list = List<Explorer>.from(_globalRanking);
+    int myIndex = list.indexWhere((e) => e.isMe);
+    if (myIndex != -1) {
+      list[myIndex] = Explorer(name: _userName, conquests: _visits.length, isMe: true);
+    }
     list.sort((a, b) => b.conquests.compareTo(a.conquests));
     return list;
   }
 
   List<Explorer> get groupRanking {
-    int myIndex = _groupRanking.indexWhere((e) => e.isMe);
-    _groupRanking[myIndex] = Explorer(name: _userName, conquests: _visits.length, isMe: true);
     final list = List<Explorer>.from(_groupRanking);
+    int myIndex = list.indexWhere((e) => e.isMe);
+    if (myIndex != -1) {
+      list[myIndex] = Explorer(name: _userName, conquests: _visits.length, isMe: true);
+    }
     list.sort((a, b) => b.conquests.compareTo(a.conquests));
     return list;
   }
@@ -335,6 +341,9 @@ class POIProvider with ChangeNotifier {
     
     final sameMuniBics = _bics.where((b) => b.municipio.toUpperCase().trim() == m);
     for (var b in sameMuniBics) { _discoveredPoiIds.add(b.id); }
+
+    _filterPois();
+    _filterBics();
   }
 
   void setFilter(String espacio) {
@@ -355,14 +364,52 @@ class POIProvider with ChangeNotifier {
   }
 
   void _filterPois() {
-    _filteredPois = _allPois.where((p) {
+    // Agrupamos por municipio para aplicar el muestreo en zonas no descubiertas
+    Map<String, List<POI>> grouped = {};
+    for (var p in _allPois) {
+      final m = p.municipio.toUpperCase().trim();
+      grouped.putIfAbsent(m, () => []).add(p);
+    }
+
+    List<POI> sampled = [];
+    grouped.forEach((muni, list) {
+      final bool isDiscovered = _discoveredMunicipios.contains(muni);
+      if (isDiscovered) {
+        sampled.addAll(list);
+      } else {
+        // En zonas no descubiertas, mostramos solo unos pocos (ej: 20%, min 1)
+        int count = (list.length * 0.2).ceil();
+        if (count < 1 && list.isNotEmpty) count = 1;
+        sampled.addAll(list.take(count));
+      }
+    });
+
+    _filteredPois = sampled.where((p) {
       final bool matchesEspacio = _selectedEspacio == "Todos" || p.enp.contains(_selectedEspacio);
       return matchesEspacio;
     }).toList();
   }
 
   void _filterBics() {
-    _filteredBics = _bics; // BICs are always visible if the 'Cultura' toggle is on
+    Map<String, List<BIC>> grouped = {};
+    for (var b in _bics) {
+      final m = b.municipio.toUpperCase().trim();
+      grouped.putIfAbsent(m, () => []).add(b);
+    }
+
+    List<BIC> sampled = [];
+    grouped.forEach((muni, list) {
+      final bool isDiscovered = _discoveredMunicipios.contains(muni);
+      if (isDiscovered) {
+        sampled.addAll(list);
+      } else {
+        int count = (list.length * 0.15).ceil();
+        if (count < 1 && list.isNotEmpty) count = 1;
+        sampled.addAll(list.take(count));
+      }
+    });
+
+    _filteredBics = sampled;
   }
 
   void updateLocation(Position position) {
@@ -372,33 +419,55 @@ class POIProvider with ChangeNotifier {
   }
 
   void _checkPassiveUnlocking(Position pos) {
+    bool changed = false;
     for (var poi in _allPois) {
-      if (!_discoveredMunicipios.contains(poi.municipio.toUpperCase().trim())) {
-        double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, poi.lat, poi.lng);
-        if (dist < 2000) {
+      double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, poi.lat, poi.lng);
+      if (dist < 500) {
+        if (!_discoveredPoiIds.contains(poi.id)) {
+          _discoveredPoiIds.add(poi.id);
+          _points += 50;
+          _visits.add(Visit(poi: poi, date: DateTime.now()));
           _unlockMunicipality(poi.municipio);
-          if (!_visits.any((v) => v.poi.municipio == poi.municipio)) {
-             _visits.add(Visit(poi: poi, date: DateTime.now()));
-          }
-          return;
+          changed = true;
+        }
+      } else if (dist < 2000) {
+        if (!_discoveredMunicipios.contains(poi.municipio.toUpperCase().trim())) {
+          _unlockMunicipality(poi.municipio);
+          changed = true;
         }
       }
     }
+    if (changed) notifyListeners();
   }
 
   Artifact? forceCheckIn(dynamic item, {String? customPhotoPath}) {
     _points += 100;
-    String muni = item is POI ? item.municipio : (item as BIC).municipio;
+    String muni = "";
+    if (item is POI) {
+      muni = item.municipio;
+      _discoveredPoiIds.add(item.id);
+    } else if (item is BIC) {
+      muni = item.municipio;
+      _discoveredPoiIds.add(item.id);
+    } else if (item is Itinerary) {
+      muni = item.municipios;
+      _totalDistance += item.distancia;
+    }
+
     _unlockMunicipality(muni);
-    _visits.add(Visit(
-      poi: item is POI ? item : POI(
-        id: item.id, name: item.name, lat: item.lat, lng: item.lng, 
-        type: "BIC", saturation: "none", description: item.description, 
-        enp: "", municipio: item.municipio, touristPressure: 0
-      ), 
-      date: DateTime.now(),
-      photoUrl: customPhotoPath ?? "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"
-    ));
+    
+    if (item is! Itinerary) {
+      _visits.add(Visit(
+        poi: item is POI ? item : POI(
+          id: item.id, name: item.name, lat: item.lat, lng: item.lng, 
+          type: "BIC", saturation: "none", description: item.description, 
+          enp: "", municipio: item.municipio, touristPressure: 0
+        ), 
+        date: DateTime.now(),
+        photoUrl: customPhotoPath ?? "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd"
+      ));
+    }
+    
     Artifact? newArtifact = _maybeDropArtifact();
     notifyListeners();
     return newArtifact;

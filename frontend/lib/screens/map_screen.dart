@@ -297,48 +297,7 @@ class _MapScreenState extends State<MapScreen> {
                   _mapController.move(LatLng(poiProvider.currentPosition!.latitude, poiProvider.currentPosition!.longitude), 14.0);
                 }
               },
-                          child: const Icon(Icons.my_location),
-                        ),
-                      ],
-                    ),
-                  ),
-              
-    );
-  }
-
-  Widget _buildSafetyBanner(POIProvider provider) {
-    final alerts = provider.activeAlerts;
-    if (alerts.isEmpty) return const SizedBox.shrink();
-    final firstMuni = alerts.keys.first;
-    final isFire = alerts[firstMuni]!.contains("GUAYOTA");
-
-    return Positioned(
-      top: 90, left: 20, right: 20,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isFire ? const Color(0xFFB71C1C) : Colors.blue[900],
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 1)],
-          border: Border.all(color: Colors.white24, width: 1),
-        ),
-        child: Row(
-          children: [
-            isFire 
-              ? Image.asset('assets/guayota.png', width: 40, height: 40)
-              : const Icon(Icons.ac_unit, color: Colors.white, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(isFire ? "¡IRA DE GUAYOTA!" : "¡AVISO ANCESTRAL!", 
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(alerts[firstMuni]!, 
-                    style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                ],
-              ),
+              child: const Icon(Icons.my_location),
             ),
           ],
         ),
@@ -504,6 +463,21 @@ class _MapScreenState extends State<MapScreen> {
                   if (artifact != null) _showArtifactDialog(artifact);
                 } : null,
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.bug_report, color: Colors.orange),
+                label: const Text("SIMULAR VISITA (DEMO)", style: TextStyle(color: Colors.orange)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  final artifact = provider.forceCheckIn(poi);
+                  Navigator.pop(context);
+                  if (artifact != null) _showArtifactDialog(artifact);
+                },
+              ),
             ],
           ),
         ),
@@ -562,6 +536,21 @@ class _MapScreenState extends State<MapScreen> {
                   Navigator.pop(context);
                   if (artifact != null) _showArtifactDialog(artifact);
                 } : null,
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.bug_report, color: Colors.orange),
+                label: const Text("SIMULAR VISITA (DEMO)", style: TextStyle(color: Colors.orange)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  final artifact = provider.forceCheckIn(bic);
+                  Navigator.pop(context);
+                  if (artifact != null) _showArtifactDialog(artifact);
+                },
               ),
             ],
           ),
