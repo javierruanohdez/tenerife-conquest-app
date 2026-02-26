@@ -597,6 +597,21 @@ class _MapScreenState extends State<MapScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Ruta ${it.matricula} activada. ¡Sigue la línea!")));
               },
             ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.bug_report, color: Colors.orange),
+              label: const Text("SIMULAR RUTA COMPLETADA (DEMO)", style: TextStyle(color: Colors.orange)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.orange),
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                provider.forceCheckIn(it);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("¡Ruta ${it.matricula} completada! Nuevos senderos revelados.")));
+              },
+            ),
           ],
         ),
       ),

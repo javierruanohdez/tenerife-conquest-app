@@ -84,13 +84,15 @@ class MuniBorder {
 class POIProvider with ChangeNotifier {
   List<POI> _allPois = [];
   List<POI> _filteredPois = [];
-  List<Itinerary> _itineraries = [];
+  List<Itinerary> _allItineraries = [];
+  List<Itinerary> _filteredItineraries = [];
   List<BIC> _bics = [];
   List<BIC> _filteredBics = [];
   List<MuniBorder> _borders = [];
   List<dynamic> _weatherStations = [];
   final Set<int> _discoveredPoiIds = {};
   final Set<String> _discoveredMunicipios = {}; 
+  final Set<String> _completedItineraryIds = {};
   final List<Visit> _visits = [];
   double _totalDistance = 0.0;
   final List<Artifact> _inventory = [
@@ -206,7 +208,7 @@ class POIProvider with ChangeNotifier {
 
   List<POI> get pois => _filteredPois;
   List<POI> get allPois => _allPois;
-  List<Itinerary> get itineraries => _itineraries;
+  List<Itinerary> get itineraries => _filteredItineraries;
   List<BIC> get bics => _filteredBics;
   List<MuniBorder> get borders => _borders;
   List<dynamic> get weatherStations => _weatherStations;
@@ -279,13 +281,13 @@ class POIProvider with ChangeNotifier {
       ]);
 
       _allPois = results[0] as List<POI>;
-      _itineraries = results[1] as List<Itinerary>;
+      _allItineraries = results[1] as List<Itinerary>;
       _weatherStations = results[2] as List<dynamic>;
       _bics = results[3] as List<BIC>;
       final rawBorders = results[4] as List<dynamic>;
       _recommendation = results[5] as Map<String, dynamic>?;
 
-      print("[DEBUG] POIs: ${_allPois.length}, Senderos: ${_itineraries.length}, Stations: ${_weatherStations.length}, BICs: ${_bics.length}, Borders: ${rawBorders.length}");
+      print("[DEBUG] POIs: ${_allPois.length}, Senderos: ${_allItineraries.length}, Stations: ${_weatherStations.length}, BICs: ${_bics.length}, Borders: ${rawBorders.length}");
 
       _borders = rawBorders.map((b) {
         final name = b['name'] as String;
@@ -307,6 +309,7 @@ class POIProvider with ChangeNotifier {
 
       _filterPois();
       _filterBics();
+      _filterItineraries();
       
       // Desbloqueo inicial (solo si no hay nada descubierto)
       if (_discoveredMunicipios.isEmpty && _allPois.isNotEmpty) {
@@ -344,6 +347,7 @@ class POIProvider with ChangeNotifier {
 
     _filterPois();
     _filterBics();
+    _filterItineraries();
   }
 
   void setFilter(String espacio) {
@@ -360,7 +364,43 @@ class POIProvider with ChangeNotifier {
 
   void toggleAllTrails(bool value) {
     _showAllTrails = value;
+    _filterItineraries();
     notifyListeners();
+  }
+
+  void _filterItineraries() {
+    if (!_showAllTrails) {
+      _filteredItineraries = [];
+      return;
+    }
+
+    // Agrupamos por municipios
+    Map<String, List<Itinerary>> grouped = {};
+    for (var it in _allItineraries) {
+      final mList = it.municipios.split(',').map((e) => e.toUpperCase().trim()).toList();
+      for (var m in mList) {
+        grouped.putIfAbsent(m, () => []).add(it);
+      }
+    }
+
+    Set<String> sampledIds = {};
+    grouped.forEach((muni, list) {
+      final bool isDiscovered = _discoveredMunicipios.contains(muni);
+      if (isDiscovered) {
+        // En municipios descubiertos, mostramos todos los que pasan por allí
+        for (var it in list) sampledIds.add(it.matricula);
+      } else {
+        // En zonas no descubiertas, mostramos solo un 10% (min 1 si hay)
+        int count = (list.length * 0.1).ceil();
+        if (count < 1 && list.isNotEmpty) count = 1;
+        for (var it in list.take(count)) sampledIds.add(it.matricula);
+      }
+    });
+
+    // Siempre mostramos los ya completados
+    sampledIds.addAll(_completedItineraryIds);
+
+    _filteredItineraries = _allItineraries.where((it) => sampledIds.contains(it.matricula)).toList();
   }
 
   void _filterPois() {
@@ -450,11 +490,13 @@ class POIProvider with ChangeNotifier {
       muni = item.municipio;
       _discoveredPoiIds.add(item.id);
     } else if (item is Itinerary) {
-      muni = item.municipios;
+      muni = item.municipios.split(',').first; // Tomamos el primer municipio como referencia
       _totalDistance += item.distancia;
+      _completedItineraryIds.add(item.matricula);
     }
 
     _unlockMunicipality(muni);
+    _filterItineraries();
     
     if (item is! Itinerary) {
       _visits.add(Visit(
