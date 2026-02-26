@@ -63,16 +63,16 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo_v1.png"
+  image_path: "assets/logo_croped.png"
   web:
     generate: true
-    image_path: "assets/logo_v1.png"
+    image_path: "assets/logo_croped.png"
   windows:
     generate: true
-    image_path: "assets/logo_v1.png"
+    image_path: "assets/logo_croped.png"
   macos:
     generate: true
-    image_path: "assets/logo_v1.png"
+    image_path: "assets/logo_croped.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -87,7 +87,7 @@ flutter:
 
   assets:
     - assets/Icono.png
-    - assets/logo_v1.png
+    - assets/logo_croped.png
     - assets/guayota.png
     - assets/badges/
 
