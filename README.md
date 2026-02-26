@@ -1,8 +1,8 @@
-# Memoria Técnica: Tenerife Quest
+# Memoria Técnica: Conquista Tenerife
 ## II Concurso Datos Abiertos: Desarrollo de APP - Cabildo de Tenerife
 
 ### 1. Resumen Ejecutivo
-**Tenerife Quest** es una solución móvil multiplataforma diseñada para revolucionar la forma en que ciudadanos y turistas exploran la isla de Tenerife. Mediante técnicas de gamificación (como la "Niebla de Guerra" y un sistema de "Conquistas"), la aplicación incentiva el descubrimiento del patrimonio cultural y natural, utilizando exclusivamente conjuntos de datos abiertos del Cabildo de Tenerife. El objetivo es promover un turismo sostenible, responsable y tecnológicamente avanzado.
+**Conquista Tenerife** es una solución móvil multiplataforma diseñada para revolucionar la forma en que ciudadanos y turistas exploran la isla de Tenerife. Mediante técnicas de gamificación (como la "Niebla de Guerra" y un sistema de "Conquistas"), la aplicación incentiva el descubrimiento del patrimonio cultural y natural, utilizando exclusivamente conjuntos de datos abiertos del Cabildo de Tenerife. El objetivo es promover un turismo sostenible, responsable y tecnológicamente avanzado.
 
 ### 2. Arquitectura de Datos e Integración (ETL)
 Como proyecto de ingeniería de datos, se ha implementado un flujo de procesamiento que garantiza la integridad y eficiencia de la información proveniente de `datos.tenerife.es`:

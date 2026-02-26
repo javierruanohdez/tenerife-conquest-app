@@ -246,7 +246,7 @@ async function init() {
   // Auto-actualización cada 15 minutos (900.000 ms)
   setInterval(fetchRealWeather, 15 * 60 * 1000);
 
-  app.listen(port, '0.0.0.0', () => console.log(`TENERIFE QUEST API v5.2 - Live & Auto-refresh (15min)`));
+  app.listen(port, '0.0.0.0', () => console.log(`CONQUISTA TENERIFE API v5.2 - Live & Auto-refresh (15min)`));
 }
 
 init();
