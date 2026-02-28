@@ -134,17 +134,13 @@ class _MapScreenState extends State<MapScreen> {
                 PolygonLayer(
                   polygons: poiProvider.borders.map((muni) {
                     final name = muni.name.toUpperCase().trim();
-                    final isDiscovered = poiProvider.discoveredMunicipios.any(
-                      (dm) => dm.toUpperCase().trim() == name
-                    );
                     final isDanger = poiProvider.isGuayotaZone(name);
+                    final opacity = poiProvider.getMuniOpacity(name);
                     
-                    // Si es zona de peligro, color fuego. Si no, niebla oscura si no está descubierto.
-                    Color polygonColor = Colors.transparent;
+                    // La opacidad disminuye (se aclara) gradualmente según el número de visitas
+                    Color polygonColor = const Color(0xFF001529).withOpacity(opacity);
                     if (isDanger) {
                       polygonColor = Colors.orange.withOpacity(0.5);
-                    } else if (!isDiscovered) {
-                      polygonColor = const Color(0xFF001529).withOpacity(0.85);
                     }
 
                     return muni.paths.map((path) => Polygon(
@@ -281,7 +277,7 @@ class _MapScreenState extends State<MapScreen> {
                                     ],
                                   ),
                                 ),
-                              ),          Positioned(bottom: 30, right: 16, child: _buildScoreCard(poiProvider)),
+                              ),          Positioned(bottom: 30, left: 16, child: _buildScoreCard(poiProvider)),
         ],
       ),
       floatingActionButton: Align(

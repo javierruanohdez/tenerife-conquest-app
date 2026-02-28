@@ -243,6 +243,31 @@ class POIProvider with ChangeNotifier {
     return activeAlerts.containsKey(muni);
   }
 
+  double getMuniOpacity(String muniName) {
+    final m = muniName.toUpperCase().trim();
+    
+    // Contamos cuántos POIs/BICs únicos se han visitado en este municipio
+    int uniqueVisitsCount = _visits
+        .where((v) => v.poi.municipio.toUpperCase().trim() == m)
+        .map((v) => v.poi.id)
+        .toSet()
+        .length;
+    
+    // Contamos senderos completados que pasan por este municipio
+    int trailsCount = _allItineraries.where((it) => 
+      _completedItineraryIds.contains(it.matricula) && 
+      it.municipios.toUpperCase().contains(m)
+    ).length;
+
+    int totalDiscoveries = uniqueVisitsCount + trailsCount;
+
+    if (totalDiscoveries == 0) return 0.85;
+    if (totalDiscoveries == 1) return 0.60;
+    if (totalDiscoveries == 2) return 0.40;
+    if (totalDiscoveries == 3) return 0.20;
+    return 0.05; // Muy claro pero aún con un toque de niebla
+  }
+
   List<Explorer> get globalRanking {
     final list = List<Explorer>.from(_globalRanking);
     int myIndex = list.indexWhere((e) => e.isMe);
