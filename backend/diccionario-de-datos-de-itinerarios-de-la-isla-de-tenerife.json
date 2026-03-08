@@ -1,0 +1,88 @@
+{
+  "@context": "http://www.w3.org/ns/csvw",
+  "@type": "Table",
+  "dc:description": "Diccionario de datos",
+  "dc:creator": "Servicio Técnico de Planificación y Proyectos Forestales. Unidad Orgánica de Uso Público y Recursos Informáticos",
+  "tableSchema": {
+    "columns": [
+      {
+        "name": "itinerario_matricula",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Identificador único del itinerario"
+      },
+      {
+        "name": "itinerario_nombre",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Nombre del itinerario"
+      },
+      {
+        "name": "itinerario_clase",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Tipo del itinerario según su uso. Valores: sendero, bicicletas y caballos, y vehículos a motor."
+      },
+      {
+        "name": "itinerario_modalidad",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Modalidad del itinerario. Valores: circular, derivación, enlace, lineal, variante."
+      },
+      {
+        "name": "itinerario_inicio",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Nombre del lugar donde comienza el itinerario."
+      },
+      {
+        "name": "itinerario_fin",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Nombre del lugar donde finaliza el itinerario."
+      },
+      {
+        "name": "itinerario_distancia",
+        "datatype": "numeric",
+        "title": "",
+        "dc:description": "Longitud en metros del itinerario."
+      },
+      {
+        "name": "itinerario_altura_minima",
+        "datatype": "numeric",
+        "title": "",
+        "dc:description": "Altitud mínima en metros del itinerario"
+      },
+      {
+        "name": "itinerario_altura_maxima",
+        "datatype": "numeric",
+        "title": "",
+        "dc:description": "Altitud máxima en metros del itinerario."
+      },
+      {
+        "name": "itinerario_desnivel_positivo",
+        "datatype": "numeric",
+        "title": "",
+        "dc:description": "Desnivel acumulado positivo en metros del itinerario."
+      },
+      {
+        "name": "itinerario_desnivel_negativo",
+        "datatype": "numeric",
+        "title": "",
+        "dc:description": "Desnivel acumulado negativo en metros del itinerario."
+      },
+      {
+        "name": "municipios_nombres",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Nombres de los municipios por donde transita el itinerario."
+      },
+      {
+        "name": "espacios_naturales",
+        "datatype": "text",
+        "title": "",
+        "dc:description": "Nombres de los espacios naturales protegidos por donde transita el itinerario."
+      }
+    ]
+  }
+}
