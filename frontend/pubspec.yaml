@@ -47,6 +47,8 @@ dependencies:
   image_picker: ^1.2.1
   mobile_scanner: ^7.1.4
   qr_flutter: ^4.1.0
+  shared_preferences: ^2.5.4
+  tutorial_coach_mark: ^1.2.12
 
 dev_dependencies:
   flutter_test:
@@ -63,16 +65,16 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/Icono.png"
+  image_path: "assets/logo_croped.png"
   web:
     generate: true
-    image_path: "assets/Icono.png"
+    image_path: "assets/logo_croped.png"
   windows:
     generate: true
-    image_path: "assets/Icono.png"
+    image_path: "assets/logo_croped.png"
   macos:
     generate: true
-    image_path: "assets/Icono.png"
+    image_path: "assets/logo_croped.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -87,8 +89,10 @@ flutter:
 
   assets:
     - assets/Icono.png
+    - assets/logo_croped.png
     - assets/guayota.png
     - assets/badges/
+    - assets/data/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

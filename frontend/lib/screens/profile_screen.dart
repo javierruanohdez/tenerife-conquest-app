@@ -116,7 +116,7 @@ class ProfileScreen extends StatelessWidget {
               color: const Color(0xFFF4E1C1), // Color pergamino/piel curtida
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.brown.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
+                BoxShadow(color: Colors.brown.withAlpha(25), blurRadius: 4, offset: const Offset(0, 2)),
               ],
               border: Border.all(color: Colors.brown[300]!, width: 1.5),
             ),
@@ -469,7 +469,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         ListTile(
           leading: const Icon(Icons.info_outline),
-          title: const Text("Acerca de Tenerife Quest"),
+          title: const Text("Acerca de Conquista Tenerife"),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             _showAboutDialog(context);
@@ -542,7 +542,7 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        const Text("Proyecto cofinanciado por el Fondo FEDER", style: TextStyle(fontSize: 10, color: Colors.grey)),
+        const Text("Proyecto desarrollado en alineación con los ODS", style: TextStyle(fontSize: 10, color: Colors.grey)),
       ],
     );
   }
@@ -550,7 +550,7 @@ class ProfileScreen extends StatelessWidget {
   void _showAboutDialog(BuildContext context) {
     showAboutDialog(
       context: context,
-      applicationName: "Tenerife Quest",
+      applicationName: "Conquista Tenerife",
       applicationVersion: "5.0.0",
       applicationIcon: const Icon(Icons.explore, size: 50, color: Colors.green),
       children: [
@@ -574,7 +574,7 @@ class ProfileScreen extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("Introduce la clave de los Menceyes para acceder al Panel de Visión Ancestral."),
+            const Text("Introduce la clave de los Menceyes para acceder al Panel de Visión General."),
             const SizedBox(height: 20),
             TextField(
               controller: controller,
@@ -595,7 +595,7 @@ class ProfileScreen extends StatelessWidget {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const CabildoDashboardScreen()));
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Clave incorrecta. Solo los elegidos pueden entrar.")),
+                  const SnackBar(content: Text("Clave incorrecta.")),
                 );
               }
             },
@@ -682,7 +682,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(width: 16),
                     Column(
                       children: [
-                        Text("${discoveredMunis.length}/${totalMunis}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.brown)),
+                        Text("${discoveredMunis.length}/$totalMunis", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.brown)),
                         const Text("Menceyatos", style: TextStyle(fontSize: 12, color: Colors.brown)),
                         const SizedBox(height: 8),
                         SizedBox(
@@ -701,14 +701,14 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text("Recorrido Ancestral", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.brown)),
+                const Text("Recorrido", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.brown)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _journalStatItem(Icons.nature_people, "Sitios", "${provider.visits.length}", Colors.green),
                     _journalStatItem(Icons.shield_outlined, "Artefactos", "${provider.inventory.length}", Colors.orange),
-                    _journalStatItem(Icons.hiking, "Senderos", "0 km", Colors.blue), // Placeholder
+                    _journalStatItem(Icons.hiking, "Senderos", "${(provider.totalDistance / 1000).toStringAsFixed(1)} km", Colors.blue),
                   ],
                 ),
               ],

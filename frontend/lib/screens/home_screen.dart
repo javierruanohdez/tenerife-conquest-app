@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/poi_provider.dart';
-import 'map_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -89,7 +88,7 @@ class HomeScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("TENERIFE QUEST", 
+              const Text("CONQUISTA TENERIFE", 
                 style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
               Text("Nivel: ${provider.points > 500 ? 'Guardián' : 'Explorador'}", 
                 style: const TextStyle(color: Colors.white70, fontSize: 14)),

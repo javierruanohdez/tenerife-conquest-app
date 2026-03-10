@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 import 'screens/map_screen.dart';
 import 'screens/conquest_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/ranking_screen.dart';
 import 'screens/missions_screen.dart';
 import 'screens/capture_preview_screen.dart';
 

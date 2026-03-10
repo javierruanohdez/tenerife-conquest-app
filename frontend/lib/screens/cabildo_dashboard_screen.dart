@@ -15,7 +15,7 @@ class CabildoDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Panel de Visión Ancestral", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Panel de Visión General", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.blueGrey[800],
         foregroundColor: Colors.white,
       ),
@@ -68,7 +68,7 @@ class CabildoDashboardScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Progreso de Conquista Comunitario", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey[700])),
-                Text("${discoveredMunis.length}/${totalMunis} Menceyatos", style: TextStyle(fontSize: 14, color: Colors.blueGrey)),
+                Text("${discoveredMunis.length}/$totalMunis Menceyatos", style: TextStyle(fontSize: 14, color: Colors.blueGrey)),
               ],
             ),
             const SizedBox(height: 16),

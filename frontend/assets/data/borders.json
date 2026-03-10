@@ -1,0 +1,16 @@
+[
+  {
+    "name": "LA OROTAVA",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[[-16.5, 28.3], [-16.6, 28.3], [-16.6, 28.4], [-16.5, 28.4], [-16.5, 28.3]]]
+    }
+  },
+  {
+    "name": "SANTA CRUZ DE TENERIFE",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[[-16.2, 28.4], [-16.3, 28.4], [-16.3, 28.5], [-16.2, 28.5], [-16.2, 28.4]]]
+    }
+  }
+]

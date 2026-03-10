@@ -3,6 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'ranking_screen.dart';
 import '../providers/poi_provider.dart';
 import '../models/poi.dart';
@@ -10,6 +12,8 @@ import '../models/bic.dart';
 import '../models/itinerary.dart';
 
 class MapScreen extends StatefulWidget {
+  const MapScreen({super.key});
+
   @override
   _MapScreenState createState() => _MapScreenState();
 }
@@ -23,13 +27,140 @@ class _MapScreenState extends State<MapScreen> {
 
   bool _guayotaAlertShown = false; // Flag para controlar si la alerta ya se mostró en esta sesión
 
+  // Tutorial Keys
+  final GlobalKey _rankingKey = GlobalKey();
+  final GlobalKey _scoreKey = GlobalKey();
+  final GlobalKey _filtersKey = GlobalKey();
+  late TutorialCoachMark tutorialCoachMark;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<POIProvider>(context, listen: false).loadData();
       _determinePosition();
+      
+      final prefs = await SharedPreferences.getInstance();
+      bool tutorialShown = prefs.getBool('map_tutorial_shown') ?? false;
+      if (!tutorialShown) {
+        _showTutorial();
+        await prefs.setBool('map_tutorial_shown', true);
+      }
     });
+  }
+
+  void _showTutorial() {
+    tutorialCoachMark = TutorialCoachMark(
+      targets: _createTargets(),
+      colorShadow: Colors.black,
+      textSkip: "SALTAR",
+      paddingFocus: 10,
+      opacityShadow: 0.8,
+      onFinish: () {
+        print("Tutorial finalizado");
+      },
+      onClickTarget: (target) {
+        print("Click en target: $target");
+      },
+      onSkip: () {
+        print("Tutorial saltado");
+        return true;
+      },
+    )..show(context: context);
+  }
+
+  List<TargetFocus> _createTargets() {
+    List<TargetFocus> targets = [];
+
+    targets.add(
+      TargetFocus(
+        identify: "ranking",
+        keyTarget: _rankingKey,
+        alignSkip: Alignment.bottomRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    "Ranking y Grupos",
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    "Pulsa aquí para ver cómo vas respecto a otros exploradores y unirte a grupos.",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    targets.add(
+      TargetFocus(
+        identify: "filters",
+        keyTarget: _filtersKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    "Filtros del Mapa",
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    "Personaliza tu vista. Puedes ocultar la niebla, ver estaciones meteorológicas o senderos.",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    targets.add(
+      TargetFocus(
+        identify: "score",
+        keyTarget: _scoreKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    "Tu Progreso",
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    "Aquí puedes ver tus puntos totales acumulados explorando la isla.",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    return targets;
   }
 
   void _showGuayotaAlertDialog(String message) {
@@ -105,7 +236,7 @@ class _MapScreenState extends State<MapScreen> {
             // if (hasActiveAlerts && poiProvider.activeAlerts.values.first.contains("GUAYOTA")) 
             //   Image.asset('assets/guayota.png', width: 28, height: 28),
             // const SizedBox(width: 8),
-            Text("Tenerife Quest", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+            Text("Conquista Tenerife", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
           ],
         ),
         backgroundColor: Colors.white.withOpacity(0.8),
@@ -132,17 +263,13 @@ class _MapScreenState extends State<MapScreen> {
                 PolygonLayer(
                   polygons: poiProvider.borders.map((muni) {
                     final name = muni.name.toUpperCase().trim();
-                    final isDiscovered = poiProvider.discoveredMunicipios.any(
-                      (dm) => dm.toUpperCase().trim() == name
-                    );
                     final isDanger = poiProvider.isGuayotaZone(name);
+                    final opacity = poiProvider.getMuniOpacity(name);
                     
-                    // Si es zona de peligro, color fuego. Si no, niebla oscura si no está descubierto.
-                    Color polygonColor = Colors.transparent;
+                    // La opacidad disminuye (se aclara) gradualmente según el número de visitas
+                    Color polygonColor = const Color(0xFF001529).withOpacity(opacity);
                     if (isDanger) {
                       polygonColor = Colors.orange.withOpacity(0.5);
-                    } else if (!isDiscovered) {
-                      polygonColor = const Color(0xFF001529).withOpacity(0.85);
                     }
 
                     return muni.paths.map((path) => Polygon(
@@ -244,6 +371,7 @@ class _MapScreenState extends State<MapScreen> {
                                 top: 50, // Permanece alto a la derecha
                                 right: 16,
                                 child: GestureDetector(
+                                  key: _rankingKey,
                                   onTap: () {
                                     Navigator.push(context, MaterialPageRoute(builder: (context) => const RankingScreen()));
                                   },
@@ -263,6 +391,7 @@ class _MapScreenState extends State<MapScreen> {
                                 top: 110, // Los filtros vuelven a su posición alta
                                 left: 0, right: 0,
                                 child: SingleChildScrollView(
+                                  key: _filtersKey,
                                   scrollDirection: Axis.horizontal,
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Row(
@@ -279,7 +408,7 @@ class _MapScreenState extends State<MapScreen> {
                                     ],
                                   ),
                                 ),
-                              ),          Positioned(bottom: 30, right: 16, child: _buildScoreCard(poiProvider)),
+                              ),          Positioned(bottom: 30, left: 16, child: Container(key: _scoreKey, child: _buildScoreCard(poiProvider))),
         ],
       ),
       floatingActionButton: Align(
@@ -295,48 +424,7 @@ class _MapScreenState extends State<MapScreen> {
                   _mapController.move(LatLng(poiProvider.currentPosition!.latitude, poiProvider.currentPosition!.longitude), 14.0);
                 }
               },
-                          child: const Icon(Icons.my_location),
-                        ),
-                      ],
-                    ),
-                  ),
-              
-    );
-  }
-
-  Widget _buildSafetyBanner(POIProvider provider) {
-    final alerts = provider.activeAlerts;
-    if (alerts.isEmpty) return const SizedBox.shrink();
-    final firstMuni = alerts.keys.first;
-    final isFire = alerts[firstMuni]!.contains("GUAYOTA");
-
-    return Positioned(
-      top: 90, left: 20, right: 20,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isFire ? const Color(0xFFB71C1C) : Colors.blue[900],
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 1)],
-          border: Border.all(color: Colors.white24, width: 1),
-        ),
-        child: Row(
-          children: [
-            isFire 
-              ? Image.asset('assets/guayota.png', width: 40, height: 40)
-              : const Icon(Icons.ac_unit, color: Colors.white, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(isFire ? "¡IRA DE GUAYOTA!" : "¡AVISO ANCESTRAL!", 
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(alerts[firstMuni]!, 
-                    style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                ],
-              ),
+              child: const Icon(Icons.my_location),
             ),
           ],
         ),
@@ -502,6 +590,21 @@ class _MapScreenState extends State<MapScreen> {
                   if (artifact != null) _showArtifactDialog(artifact);
                 } : null,
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.bug_report, color: Colors.orange),
+                label: const Text("SIMULAR VISITA (DEMO)", style: TextStyle(color: Colors.orange)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  final artifact = provider.forceCheckIn(poi);
+                  Navigator.pop(context);
+                  if (artifact != null) _showArtifactDialog(artifact);
+                },
+              ),
             ],
           ),
         ),
@@ -561,6 +664,21 @@ class _MapScreenState extends State<MapScreen> {
                   if (artifact != null) _showArtifactDialog(artifact);
                 } : null,
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.bug_report, color: Colors.orange),
+                label: const Text("SIMULAR VISITA (DEMO)", style: TextStyle(color: Colors.orange)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  final artifact = provider.forceCheckIn(bic);
+                  Navigator.pop(context);
+                  if (artifact != null) _showArtifactDialog(artifact);
+                },
+              ),
             ],
           ),
         ),
@@ -604,6 +722,21 @@ class _MapScreenState extends State<MapScreen> {
                 provider.setHighlightedItinerary(it.matricula);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Ruta ${it.matricula} activada. ¡Sigue la línea!")));
+              },
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.bug_report, color: Colors.orange),
+              label: const Text("SIMULAR RUTA COMPLETADA (DEMO)", style: TextStyle(color: Colors.orange)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.orange),
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                provider.forceCheckIn(it);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("¡Ruta ${it.matricula} completada! Nuevos senderos revelados.")));
               },
             ),
           ],

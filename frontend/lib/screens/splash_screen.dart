@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/poi_provider.dart';
+import '../main_container.dart';
 import 'onboarding_screen.dart'; // IMPORTAR ONBOARDING
 
 class SplashScreen extends StatefulWidget {
@@ -21,13 +23,23 @@ class _SplashScreenState extends State<SplashScreen> {
     // Iniciamos la carga de datos desde el provider
     await Provider.of<POIProvider>(context, listen: false).loadData();
     
+    // Comprobar si es la primera vez
+    final prefs = await SharedPreferences.getInstance();
+    final bool onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+
     // Una pequeña pausa estética para que se vea el logo
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      );
+      if (onboardingCompleted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainContainer()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+      }
     }
   }
 
@@ -49,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const Icon(Icons.eco, size: 100, color: Colors.white),
             const SizedBox(height: 24),
             const Text(
-              "TENERIFE\nQUEST",
+              "CONQUISTA\nTENERIFE",
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
@@ -80,8 +92,8 @@ class _SplashScreenState extends State<SplashScreen> {
                               const Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text("Fondo Europeo de", style: TextStyle(color: Colors.white, fontSize: 10)),
-                                  Text("Desarrollo Regional", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  Text("Solución Digital", style: TextStyle(color: Colors.white, fontSize: 10)),
+                                  Text("Impulsada por los ODS", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               const SizedBox(width: 30),

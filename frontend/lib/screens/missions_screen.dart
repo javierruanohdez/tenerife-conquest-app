@@ -59,7 +59,7 @@ class MissionsScreen extends StatelessWidget {
         description: "Escucha el susurro de 5 estaciones meteorológicas.",
         xpReward: 200,
         icon: Icons.cloud_sync,
-        progress: 0.4, 
+        progress: (provider.visits.where((v) => v.poi.type == "Estación").length / 5).clamp(0.0, 1.0), 
       ),
     ];
 
@@ -105,7 +105,7 @@ class MissionsScreen extends StatelessWidget {
             children: [
               Icon(Icons.stars, color: Colors.amber, size: 20),
               SizedBox(width: 8),
-              const Text("EVENTOS ANCESTRALES EN CURSO", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text("EVENTOS CURSO", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           ),
         ),

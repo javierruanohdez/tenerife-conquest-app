@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "nombre": "Teleférico del Teide",
+    "tipo": "Servicios y Facilidades",
+    "lat": 28.254592801429688,
+    "lng": -16.625797883564047,
+    "descripcion": "La estación base del teleférico del Teide...",
+    "enp": "Parque Nacional del Teide",
+    "municipio": "La Orotava"
+  },
+  {
+    "id": 2,
+    "nombre": "Iglesia de San Pedro Apóstol",
+    "tipo": "Patrimonio Arquitectónico",
+    "lat": 28.525557512004102,
+    "lng": -16.153901429139932,
+    "descripcion": "Iglesia de San Andrés...",
+    "enp": "",
+    "municipio": "Santa Cruz de Tenerife"
+  }
+]
