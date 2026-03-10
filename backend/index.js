@@ -5,7 +5,7 @@ const path = require('path');
 const csv = require('csv-parser');
 const axios = require('axios');
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -52,6 +52,7 @@ async function fetchRealWeather() {
         lng: parseFloat(st.longitude),
         alt: st.altitude,
         sensors_count: st.sensors_count || 0,
+        temp: 22.0, // Fixed temperature to avoid simulated alerts
         status: "Online"
       })).filter(st => !isNaN(st.lat) && !isNaN(st.lng));
       console.log(`[METEO] ${realWeatherStations.length} Estaciones actualizadas.`);
@@ -210,10 +211,12 @@ async function loadItinerarios() {
         let paths = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
         const dist = parseFloat(csvMatch ? csvMatch.itinerario_distancia : gp.itinerario_distancia) || 0;
         const desnivel = parseFloat(csvMatch ? csvMatch.itinerario_desnivel_positivo : 0) || 0;
+        const clase = csvMatch ? csvMatch.itinerario_clase : (gp.itinerario_clase || "Sendero");
         return {
           id: index + 1,
           matricula: geoMatricula,
           name: gp.itinerario_nombre,
+          clase: clase,
           description: csvMatch ? `Ruta por ${csvMatch.municipios_nombres}.` : "Ruta oficial.",
           distancia: Math.round(dist),
           desnivelPos: Math.round(desnivel),
@@ -243,7 +246,7 @@ async function init() {
   // Auto-actualización cada 15 minutos (900.000 ms)
   setInterval(fetchRealWeather, 15 * 60 * 1000);
 
-  app.listen(port, '0.0.0.0', () => console.log(`TENERIFE QUEST API v5.2 - Live & Auto-refresh (15min)`));
+  app.listen(port, '0.0.0.0', () => console.log(`CONQUISTA TENERIFE API v5.2 - Live & Auto-refresh (15min)`));
 }
 
 init();
